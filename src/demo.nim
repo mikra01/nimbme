@@ -76,13 +76,11 @@ proc generateGaussianNoise(mu: float = 0.0, sigma: float = 1.0): (float, float) 
   let z1 = mag * sin(2 * PI * u2) + mu
   (z0, z1)
 
-
-
 # proc bookmarks uart-input-line-events
 
 proc usrProcess( pid : ProcessID, customVal : uint ) : int  = # exportc:"__ext_kmain2"
   var loopctr : int = 0
-  var x : seq[int] = @[1,2,3]
+
   echo "enter loop"
   hal_uart_0_strout_blocking "process entered",14
   while loopctr < 10+pid :
