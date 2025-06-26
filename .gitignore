@@ -1,3 +1,7 @@
 nimcache/
 nimblecache/
 htmldocs/
+out/
+.vscode/
+*.code-workspace
+out_raspberry_pi1/
