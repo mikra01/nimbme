@@ -40,6 +40,7 @@ General target requirements:
 - wire gpio15 (RxD0) to adapter's tx-line
 - Rx/Tx wires should be short as possible (10cm jumper wired will work) / the ftdi runs fine with 3000000baud (other vendors not tested)
 - wire ground (I always use pin39) to adapter ground
+![connect tx/rx uart lines](../assets/pi_zero_wiring.png)
 - power target on
 - follow the instructions on terminal :-)
 
