@@ -106,6 +106,9 @@ SECTIONS
         *(.data .data.*)
     } > ram AT >flash
 
+    /* section needed for != -exceptions:goto */
+    /* .ARM.exidx : { __exidx_start = .; *(.ARM.exidx* .gnu.linkonce.armexidx.*) __exidx_end = .; } > ram */
+
     . = ALIGN(8);
    _end = .; 
   . = . + HEAP_SIZE; 

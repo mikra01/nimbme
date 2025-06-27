@@ -59,9 +59,9 @@ task build_rp1, " compile and link with arm-none-eabi-gcc toolchain ":
   let asmFlags = " -march=armv6zk "
   let compilerFlags = " --cpu:arm --passC:-mfpu=vfp --passC:-mfloat-abi=soft --passC:-marm --passC:-mno-unaligned-access  --passC:-mcpu=arm1176jzf-s " 
   let boardAndArchTune = " --os:any --mm:arc -d:useMalloc -d:posix  -d:noSignalHandler --passC:-Iout_raspberry_pi1/ "
-  let boardAndArchTuneNoOs = " --os:standalone --mm:none -d:useMalloc -d:noSignalHandler "
+  let boardAndArchTuneLdrApp = " --os:standalone --mm:none -d:useMalloc -d:noSignalHandler "
   let outname = "kernel"
-  let prec = " --passL:-Lout_raspberry_pi1 --passL:-o" & outdir & "/" & "loader.elf " &  compilerFlags & boardAndArchTuneNoOs & " -d:release -d:danger --define:board=" & board & " --define:buildVers=" & buildVers &  " --passL:-T" & linkscripttools & " --listCmd --hint:cc --nimcache:" & outdir & "/nimc src/" & 
+  let prec = " --passL:-Lout_raspberry_pi1 --passL:-o" & outdir & "/" & "loader.elf " &  compilerFlags & boardAndArchTuneLdrApp & " -d:release -d:danger --define:board=" & board & " --define:buildVers=" & buildVers &  " --passL:-T" & linkscripttools & " --listCmd --hint:cc --nimcache:" & outdir & "/nimc src/" & 
     "core/hal/board/raspberry_pi1/tools/srecldr.nim"
 
   # compile loader entry
