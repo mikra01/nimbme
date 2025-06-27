@@ -327,7 +327,7 @@ proc runtimeDispatcherDemoWithExit*(exitChar : char, usrProc : ProcessHook)=
               discard executeProcess(cnum)
               cyclesCurr = hal_armcc_readCycleCounter()
 
-
+  # TODO: relate the irq-cycles to a specific process
   echo "cycles_total_running " &  $absCycles
   echo "cycles _ interrupt " & $irqCycleStats
   for i in 0..environmentContext.processes.len-1:

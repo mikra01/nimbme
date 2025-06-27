@@ -67,12 +67,14 @@ task build_rp1, " compile and link with arm-none-eabi-gcc toolchain ":
   exec "arm-none-eabi-as --keep-locals " & asmFlags & constrCrt0Tools(board) & " -o " & outdir & "/ldr.o" 
   # compile loader app
   exec "nim c " & prec
-  # create loader syms (debug - do not open)
+  # create loader.bin which is included in the environment-build
   exec "arm-none-eabi-objcopy -O binary -S " & outdir & "/" & "loader.elf" & " " & outdir & "/" & "loader.bin"
-
+  # create loader syms for debugging
   writeFile(outdir & "/loader.sym",staticExec("arm-none-eabi-nm -n " & outdir & "/loader.elf"))
   
-  compileAndLink(cpuArch,board,buildVers,linkscript,crt0,asmFlags,compilerFlags,boardAndArchTune,"demo.nim",outname, outdir,"")
+  let sourcefilename = "demo.nim" # change this for your needs
+
+  compileAndLink(cpuArch,board,buildVers,linkscript,crt0,asmFlags,compilerFlags,boardAndArchTune,sourcefilename,outname, outdir,"")
   exec "arm-none-eabi-objcopy -O srec -S  --srec-forceS3 " & outdir & "/" & outname & ".elf" & " " & outdir & "/" & outname & ".srec" 
   if fileExists(outdir & "/" & "kernel.img"):
     rmFile(outdir & "/" & "kernel.img")
