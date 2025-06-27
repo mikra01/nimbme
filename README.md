@@ -79,4 +79,4 @@ If you like to monitor specific code parts use intro and outro procs with export
 - ...
 
 ### credits
-David Welch´s experiments years ago saved me some time in figuring out 'bcm2835-details' in cases the datasheet lacks some information or was simply wrong (no official erratasheet out there...). If you like to look into the datasheet consult this before: [bcm2835 errata](elinux.org/BCM2835_datasheet_errata)
+David Welch´s experiments years ago saved me some time in figuring out 'bcm2835-details' in cases the datasheet lacks some information or was simply wrong (no official erratasheet out there...). If you like to look into the datasheet consult this before: [bcm2835 errata](https://elinux.org/BCM2835_datasheet_errata)
