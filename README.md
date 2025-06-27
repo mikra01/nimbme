@@ -65,7 +65,7 @@ I did some overclocking experiments (core-clock 500mHz / arm-clock 1gHz) and I f
 
 #### debugging techniques
 thanks to Nim you literally do not need a jtag debugger (this project was completely done without one). If you like to invest some money go for a scope and utilize gpio for tackling rt problems.
-If you like to monitor specific code parts use intro and outro procs with exported symbols (to find the codepart of interest) and consult the .lss output. Join state information (print out register- and/or memory snapshots) if needed. For latency measurements take snapshots of the 64bit free running counter (clocked at 1mHz fixed). Unfortunately the free running arm counter option is not implemented (bcm2835) and the prescaler only works with 256 so there is now way to get a better resolution than around 512ns (500mHz core clock divided by 256). Fine granuled measurement is only possible with the arm cycle counter (max. roundabout 4 seconds without prescaler) 
+If you like to monitor specific code parts use intro and outro procs with exported symbols (to find the codepart of interest) and consult the .lss output. Join state information (print out register- and/or memory snapshots) if needed. For latency measurements take snapshots of the 64bit free running counter (clocked at 1mHz fixed). Unfortunately the free running arm counter option is not implemented (bcm2835) and the prescaler only works with 256 so there is now way to get a better resolution than around 512ns (500mHz core clock divided by 256). Fine granuled measurement is only possible with the arm cycle counter (roundabout 4 seconds max. without prescaler) 
 
 ### next steps
 - GPIO handling helper (RP1)
