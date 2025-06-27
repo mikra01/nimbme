@@ -76,9 +76,25 @@ proc generateGaussianNoise(mu: float = 0.0, sigma: float = 1.0): (float, float) 
   let z1 = mag * sin(2 * PI * u2) + mu
   (z0, z1)
 
-# proc bookmarks uart-input-line-events
 
-proc usrProcess( pid : ProcessID, customVal : uint ) : int  = # exportc:"__ext_kmain2"
+
+proc halRegDumpAndStackDumpTest() = 
+  var srcrd : ArmCpuState
+  hal_cpu_saveAllRegisters(addr srcrd.r)
+  hal_cpu_saveSP(addr srcrd)
+  hal_cpu_saveLR(addr srcrd)
+  hal_cpu_saveCPSR(addr srcrd)
+
+  let sptr = hal_cpu_readSP()
+
+  echo "==BEGIN register-dump ====="
+  echo $(srcrd.addr)
+  echo "==END register-dump ===="
+  echo "==BEGIN stackdump ==="
+  debugutil_dumpMem2StdOut(sptr,20)
+  echo "==END stackdump ==="
+
+proc usrProcess( pid : ProcessID, customVal : uint ) : int  =
   var loopctr : int = 0
 
   echo "enter loop"
@@ -99,6 +115,8 @@ proc usrProcess( pid : ProcessID, customVal : uint ) : int  = # exportc:"__ext_k
       echo "resource allocated " & $xLockResource(1)
     elif pid == 6 and loopctr == 13:
       freeResource(1)  
+    elif pid == 2 and loopctr == 5:
+      halRegDumpAndStackDumpTest()  
     else:
       sleep 800
 
@@ -158,18 +176,6 @@ proc streamsTest() =
 
 
 
-proc halRegDumpTest*(){.cdecl.} = 
-  var srcrd : ArmCpuState
-  hal_cpu_saveAllRegisters(addr srcrd.r)
-  hal_cpu_saveSP(addr srcrd)
-  hal_cpu_saveLR(addr srcrd)
-  hal_cpu_saveCPSR(addr srcrd)
-
-  echo "==BEGIN halRegDumpTest ====="
-  echo $(srcrd.addr)
-  echo "==END halRegDumpTest ===="
-
-
 proc stackSentinelTest() = 
   echo "isIRQStackTampered: ",$isIRQStackSentinelTampered()
   echo "isSUPVStackTampered: ",$isSupvStackSentinelTampered()
@@ -191,8 +197,9 @@ proc initBoard*(){.exportc:"_initialize_custom",cdecl.} =
 
 proc doTestAll()=
   discard raiseAndCatchExTest()
+  # seems ex ends in global ex-handler. eval why
 
-  halRegDumpTest()
+  halRegDumpAndStackDumpTest()
 
   miscMathTest()
   testOOP()
@@ -212,7 +219,7 @@ proc doTestAll()=
     hal_uart_0_chrout(uartInputBuffer.fetchVal())
 
   
-  echo "type 'P' to spawn new process - number 0-9 to start - 'x' to exit demo"
+  echo "type 'P' to spawn new process - after that the pid to start (0-9) - 'x' to exit demo"
 
   runtimeDispatcherDemoWithExit('x',usrProcess)
 

@@ -42,14 +42,14 @@ template hal_cpu_doSoftwareIRQ*(trapNum : static cint) =
   """.} # quirky but svc <number> is a literal - reg is not supported in armv4/5/6
   {.emit: ["doSoftwareIRQ(",astToStr(trapNum), ");"].}
 
-proc hal_cpu_readPC*() : uint {.inline.} = 
+proc hal_cpu_readPC*() : ptr uint {.inline.} = 
   asm """
        mov %0,pc 
        : "=r"(`result`)
        :
        : """  
 
-proc hal_cpu_readSP*() : uint {.inline.} =
+proc hal_cpu_readSP*() : ptr uint {.inline.} =
 # get the current SP value (the full memory loc)   
  asm """
     mov %0,SP

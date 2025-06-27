@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <https://www.gnu.org/licenses/>.
 # 
-proc debugutil_dumpMem2StdOut*(memstart : ptr uint, numberOfDWords : int)=
+proc debugutil_dumpMem2StdOut*(memstart : ptr uint, numberOfDWords : int) {.inline.}=
     usePtr[uint]:
       var memptr : ptr uint = memstart
       var charbuff : array[9,char]
