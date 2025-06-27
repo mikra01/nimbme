@@ -29,7 +29,8 @@ proc compileAndLink(cpuArch: string ,board :  string, buildVers : string, linksc
   exec "nim c  " & passl & compilerFlags & boardAndArchTune & " -d:release --define:cpuArch=" & cpuArch & " --define:board=" & board & " --define:buildVers=" & buildVers & " --listCmd --hint:cc --hint:link  --nimcache:" & outdir & "/nimcache src/" & modname
   writeFile(outdir & "/section_hdr.txt",staticExec("arm-none-eabi-readelf -S " & outnamedir))
   exec "arm-none-eabi-objcopy -O binary -S " & outdir & "/" & outname & ".elf" & " " & outdir & "/" & outname & ".bin"
-  writeFile(outdir & "/demo.sym",staticExec("arm-none-eabi-nm -n " & outnamedir))
+  writeFile(outdir & "/" & outname & ".sym",staticExec("arm-none-eabi-nm -n " & outnamedir))
+  writeFile(outdir & "/" & outname & ".lss",staticExec("arm-none-eabi-objdump -h -S -C " & outnamedir)) 
 
 
 template constrLinkerScript(board : string) : string =
