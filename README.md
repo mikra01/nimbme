@@ -56,9 +56,9 @@ General target requirements:
 - the ARM is configured to prevent unaligned access
 
 ### remark on the build size and experiments
-the build size is heavily influenced by libraries and functions you are using. For instance printf and friends occupies whooping >20kiB.
-I faced some runtime problems (spurious exceptions) with newlib-nano so it is not used. 
-If you experiment keep in mind that the stack needs to be 8byte aligned in most cases. When you face race conditions this could be the culprit (or your stack is corrupted). Experimenting with SBC´s are great because your hardware is not brickable. 
+the build size is heavily influenced by libraries and functions you are using. For instance printf and friends occupies whooping >20kiB program space.
+I faced some runtime problems (spurious exceptions) with newlib-nano so it is not used. The default newlib build delivered with the toolchain has reent-support and that stuff needs also much program-space.
+If you experiment keep in mind that the stack needs to be 8byte aligned in most cases. When you face race conditions this could be the culprit (or your stack is corrupted due to overflows). Experimenting with SBC´s is great because your hardware is not brickable. 
 Unfortunately the provided bcm2835 datasheet is everything but not a datasheet (seriously). If you look at the PI4/PI5 nothing changed. There are other vendors with superior documentation if you like to start with that topic. I simply choosed this target because I recently found one onto my desk ( I remembered Linux was awful slow on this target (10yrs ago) )... and now there is something better :-) --- and yes I was not aware how 'detailed' the BCM-datasheet is.
 
 #### overclocking (use at your own risk)
