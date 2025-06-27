@@ -9,6 +9,7 @@ General target requirements:
 - 1 UART for terminal
 - 1 hardware timer
 - [cycle counter]
+- software interrupt mechanism
 
 ### features
 - cooperative scheduler (actual simple round-robin scheme / deadline-scheduler planned)
@@ -42,7 +43,7 @@ General target requirements:
 - power target on
 - follow the instructions on terminal :-)
 
-### whats actual implemented
+### whats implemented so far..
 - stdio is retargeted to UART
 - the demo spawns up to 10 'processes' (at the moment no posix api)
 - the complete runtime in cycles (per process) is collected (irq cycles are also collected but at the moment not related to the actual active process)
@@ -54,10 +55,10 @@ General target requirements:
 - the ARM is configured to prevent unaligned access
 
 ### remark on the build size and experiments
-the build size is heavily influenced which libraries and functions you are using. For instance printf and friends uses whooping >20kiB.
+the build size is heavily influenced which libraries and functions you are using. For instance printf and friends occupies whooping >20kiB.
 I faced some runtime problems (spurious exceptions) with newlib-nano so it is not used. 
 If you experiment keep in mind that the stack needs to be 8byte aligned in most cases. When you face race conditions this could be the culprit (or your stack is corrupted). Experimenting with SBC´s are great because your hardware is not brickable. 
-Unfortunately the provided bcm2835 datasheet is everything but no datasheet (seriously). There are other vendors with serious documentation. I simply started with this target because I recently found one onto my desk and Linux was awful slow (15yrs ago)...
+Unfortunately the provided bcm2835 datasheet is everything but no datasheet (seriously). If you look at the PI4/PI5 nothing changed. There are other vendors with superior documentation if you like to start. I simply choosed this target because I recently found one onto my desk and Linux was awful slow (15yrs ago)... and yes I was not aware how 'detailed' the BCM-datasheet is.
 
 ### next steps
 - GPIO handling helper (RP1)
