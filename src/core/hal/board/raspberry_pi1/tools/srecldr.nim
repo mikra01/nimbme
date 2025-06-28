@@ -71,14 +71,8 @@ template char2Byte(hsb : char, lsb : char) : byte =
   var hn = 0.byte
   var ln = 0.byte
 
-  if hsb > 0x39.char:
-    hn = getHexDigit(hsb)
-  else:
-    hn = getNumDigit(hsb)
-  if lsb > 0x39.char:
-    ln = getHexDigit(lsb)
-  else:
-    ln = getNumDigit(lsb)
+  hn = char2Nibble(hsb)
+  ln = char2Nibble(lsb)
 
   (hn shl 4) or ln 
 
@@ -113,8 +107,7 @@ template receiveByte() : byte =
          inc cacount
   char2Byte(ca[0],ca[1])
 
-template receiveData(numpad : int) : uint = 
-  var bp : array[4,byte] = [0x0.byte,0x0.byte,0x0.byte,0x0.byte]
+template receive(numpad : int, bp : array[4,byte]) =
   var idx = 1
   var cnt = 4
   if numpad > 0:
@@ -122,17 +115,15 @@ template receiveData(numpad : int) : uint =
   while idx <= cnt:
     bp[idx-1] = receiveByte()
     inc idx 
+
+template receiveData(numpad : int) : uint = 
+  var bp : array[4,byte] = [0x0.byte,0x0.byte,0x0.byte,0x0.byte]
+  receive(numpad,bp)
   buildDwordAndCkSum(bp[3],bp[2],bp[1],bp[0]) 
 
 template receiveLoadAddr(numpad : int) : uint = 
   var bp : array[4,byte] = [0x0.byte,0x0.byte,0x0.byte,0x0.byte]
-  var idx = 1
-  var cnt = 4
-  if numpad > 0:
-    cnt.dec(numpad)
-  while idx <= cnt:
-    bp[idx-1] = receiveByte()
-    inc idx 
+  receive(numpad,bp) 
   buildDwordAndCkSum(bp[0],bp[1],bp[2],bp[3])   
 
 
