@@ -69,7 +69,7 @@ thanks to Nim you literally do not need a jtag debugger (this project was comple
 If you like to monitor specific code parts use intro and outro public procs with exported symbols (to find the codepart of interest) and consult the .lss output. Join state information (print out register- and/or memory snapshots) if needed. For latency measurements take snapshots of the 64bit free running counter (clocked at 1mHz fixed - see 'systemtimer.nim' within hal/ subdir ). Unfortunately the free running arm counter option is not implemented (bcm2835) and the prescaler only works with 256 so there is now way to get a better resolution than around 512ns (500mHz core clock divided by 256). Fine granuled measurement is only possible with the arm cycle counter (roundabout 4 seconds max. without prescaler) 
 
 ### next steps
-- alloc fixed size memblocks (stackspace) while compiletime and not runtime
+- alloc fixed size memblocks (stackspace) while compiletime and not runtime (done)
 - GPIO handling helper (RP1)
 - more targets (Cortex-M0 / Sitara AM3358 / risc-v /.. planned)
 - in memory-app mode for flash targets with ram > 32kiB (compile and run your prototype in ram without flashing)

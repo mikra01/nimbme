@@ -25,12 +25,11 @@ const DiagBufferOutElemSize* : int = 20 # diagnostics buffer element size
 const GlobalStackSentinelVal* = 0xCFFFEEBA.uint   # depends on arch reg width
 # for stackpointer alignment see
 # https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/using-the-stack-in-aarch32-and-aarch64
-const UserProcessStackSize_bytes* : uint = 1024.uint #  # valid vals are: 256,512,1024(minimum if d:danger is omitted),2048,4096,8192,16348
-const UserProcessStackSlots* : int = 10 #  # needed heap-mem: UserProcessStackSlots * UserTaskStackSize_bytes
+const UserProcessStackSize_bytes* : uint = 1024 #  # valid vals are: 256,512,1024(minimum if d:danger is omitted),2048,4096,8192,16348
 const UserProcessEventSlots* : int = 5  # num of events a process can wait for simultaneously
 const UserProcessStackSentinelPos* : int = 5 # number dwords from stack bottom
 const UserDebugEchoPID* : bool = true
-const MaxUserProcessCount* : int = 10.int    
+const MaxUserProcessCount* : int = 10
 const DefaultRuntimeQueueSize* : int = 12   
 const AuditTrailEntrySize* : int = 16 # size of the audit trail log
 const SoftTimerPoolSize* : int = 40 # if set to 0 timerpool is disabled

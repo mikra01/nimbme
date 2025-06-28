@@ -70,8 +70,8 @@ SECTIONS
        
     } > flash
   
-    .stack (NOLOAD):
-    {   . = ALIGN(8);
+    .stack (NOLOAD): ALIGN(8)
+    {  
         _stack_bottom = .;               
           . = . + UNDEF_STACK_SIZE;
         _undef_stack = .;
@@ -106,13 +106,16 @@ SECTIONS
         *(.data .data.*)
     } > ram AT >flash
 
+    .heap (NOLOAD) : ALIGN(8) {   
+      _end = .; 
+      . = . + HEAP_SIZE; 
+      _heap_end = .;
+    } > ram
+
     /* section needed for != -exceptions:goto */
     /* .ARM.exidx : { __exidx_start = .; *(.ARM.exidx* .gnu.linkonce.armexidx.*) __exidx_end = .; } > ram */
-
-    . = ALIGN(8);
-   _end = .; 
-  . = . + HEAP_SIZE; 
-  _heap_end = .;
+    
+   
 
 _bss_start = ADDR(.bss);
 _bss_end = _bss_start + SIZEOF(.bss);

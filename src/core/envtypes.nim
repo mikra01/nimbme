@@ -24,6 +24,7 @@ include hal/generic/consts
 
 var uartInputBuffer* : CharBuffer[UartBufferInCharSize]
 var uartOutputBuffer* : CharBuffer[UartBufferOutCharSize]
+var fixedStackSpace*{.align(8).} : array[cast[int](UserProcessStackSize_bytes) * (MaxUserProcessCount),byte]
 
 type
   Micros32* = uint

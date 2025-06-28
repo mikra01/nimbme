@@ -37,8 +37,7 @@ import event,audittrail
 
 proc initializeEnvironment*() =
   setActivePID(PID_SYS)
-  let memptr  = alloc0(calculateMemBufferSize(MemPoolBufferSize(UserProcessStackSize_bytes),UserProcessStackSlots))
-  environmentContext.stackPool = newMemPool(MemPoolBufferSize(UserProcessStackSize_bytes),UserProcessStackSlots,memptr)
+  environmentContext.stackPool = newMemPool(MemPoolBufferSize(UserProcessStackSize_bytes),MaxUserProcessCount,cast[pointer](addr fixedStackSpace))
 
   environmentContext.sysTimerPool.initTimerPool(SoftTimerPool_millis_correctionFactor)
   environmentContext.running.reset()
