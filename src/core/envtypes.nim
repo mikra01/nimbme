@@ -122,6 +122,7 @@ type
     #cyclesExecEstimate : uint32
     #dlPri : enum
     #cyclesAbsDeadline : uint32   # abs deadline in PMCCNTR-ticks
+    # todo: measure worst case runtime of glue-code (with irq_cycles). this is the min abs dl val
     #deadlineMissesCntr : uint32  # debug
  
 
