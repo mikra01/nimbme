@@ -393,6 +393,11 @@ proc clock_nanosleep(clockId: ClockIdT, flags : int, rqtp : ptr Timespec, rmtp :
 #int _EXFUN(clock_gettime, (clockid_t clock_id, struct timespec *tp));
 #int _EXFUN(clock_getres,  (clockid_t clock_id, struct timespec *res));
 
+# when board == "raspberry_pi1":
+# todo: hint on tls
+# arm11 is A-Profile, so TPIDRURW should be present
+# hint on mc
+# per core: own scheduler, heap, tls / proc is always pinned (no mig) 
 
 proc newlibTimes( tms: ptr Tms) : cint {.importc:"_times",codegenDecl: "$# __attribute__((used)) $#$#",cdecl.} =
   errno = EACCES
