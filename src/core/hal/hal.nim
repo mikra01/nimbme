@@ -229,6 +229,7 @@ proc stdlibwrapper_initialize_board(){.exportc:"_hal_initialize_board",cdecl.}  
       # TODO: write audit entry in case of this error
 
     hal_armtimerTickResolutionNanos = ( 0x3b9aca00.uint div hal_corefrequency ) * 256 # only this divider is supported by bcm2835 
+    hal_gpioaux_enableAux()
     hal_miniuart_init(hal_coreFrequency,config_uartBaudRate)
     hal_systemtimer_1_init()
     miniuart_enable_rx_irq()

@@ -74,19 +74,19 @@ const
 #0x7E21 50D0 AUX_SPI1_IO_REG SPI 2 Data 32
 #0x7E21 50D4 AUX_SPI1_PEEK_REG SPI 2 Peek 16 
 
-template enableAux*() =
-    AUX_ENABLES.setAuxVal 1.uint32
+template hal_gpioaux_enableAux*() =
+    AUX_ENABLES.hal_gpioaux_setAuxVal 1.uint32
 
-template getAuxVal*(idx : AUXREG) : uint =
+template hal_gpioaux_getAuxVal*(idx : AUXREG) : uint =
     hal_cpu_getDWord(cast[ptr uint](addr AUXBASE[idx]))
 
-template setAuxVal*(idx : AUXREG, val : uint) =
+template hal_gpioaux_setAuxVal*(idx : AUXREG, val : uint) =
     hal_cpu_storeDWord(cast[ptr uint](addr AUXBASE[idx]) ,val)
 
-template getGpVal*(idx : GPIOREG) : uint =
+template hal_gpioaux_getGpVal*(idx : GPIOREG) : uint =
     hal_cpu_getDWord( cast[ptr uint](addr GPIOBASE[idx]) )
 
-template setGpVal*(idx : GPIOREG, val : uint) =
+template hal_gpioaux_setGpVal*(idx : GPIOREG, val : uint) =
     hal_cpu_storeDWord( cast[ptr uint](addr GPIOBASE[idx]), val )
 
 #template `[]`*(ap : AUXPTR, idx : AUXREG): uint32 = 
