@@ -18,7 +18,7 @@
 import std/[strutils,volatile]
 import utils/[charbuffer,mempool,timerpool]
 import ../envconfig
-import event, future
+import event
 
 include hal/generic/consts
 
@@ -116,29 +116,14 @@ type
     resourceRequestResult* : ResourceHandle
     resultVal* : cint
     cyclesActive* : uint  # experimental: count cycles of proc in running queue
-    #cyclesTotal : uint64       
-    #cycles_start : uint32
-    #cyclesStartup : uint32
-
-  #// Zeitmessung
-  #  uint64_t cycle_start;        // Zeitpunkt des Starts (PMCCNTR)
-  #  uint64_t cycle_total;        // Akkumulierte Laufzeit
-  #  uint32_t cycle_last;         // Letzte Laufzeitdauer
-  #
-  #  // Deadline-Scheduling
-  #  uint632_t deadline;           // Absolute Deadline (PMCCNTR-Ticks) 
-  #                               // Muss auch über PMCCNTR-Überläufe hinweg exakt bleiben
-  #  uint32_t period;             // Optional: bei periodischen Tasks (naechster start in ...)
-  #  uint64_t exec_estimate;      // Geschätzte Laufzeit (z. B. Worst-Case)
-  #
-  #  // Priorisierung
-  #  uint8_t user_priority;       // High, Medium, Low (optional)
-  #
-  #  // Statistik / Debug
-  #  uint32_t deadline_misses;    // Zähler verpasster Deadlines
-  #  uint32_t preemptions;        // Wie oft wurde Task verdrängt
-  #  const char* name;            // Für Debug-Zwecke
-
+    #cyclesTotal : uint64    # accumulated runtime      
+    #cyclesStartup : uint64 # val of  PMCCNTR at start
+    #cyclesLastDuration : uint32 # last duration
+    #cyclesExecEstimate : uint32
+    #dlPri : enum
+    #cyclesAbsDeadline : uint32   # abs deadline in PMCCNTR-ticks
+    #deadlineMissesCntr : uint32  # debug
+ 
 
   ProcControlBlockPtr* = ptr ProcControlBlock  
 
