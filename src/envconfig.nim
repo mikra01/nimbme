@@ -42,9 +42,9 @@ const CycleCounterPrescalerActive* : bool = false # 64
 const config_uartXon* : char = 17.char
 const config_uartXoff* : char = 19.char
 const config_uartBaudRate* : uint = 3000000
-const uartUseBufferedOut* : bool = false # set UartBufferOutCharSize = 1 if this flag is: false
-const uartOutBuffer_flush_blocking* : bool = true # only sync out supported for now  
-const uartUseBufferedRxIRQ* : bool = true # buffered receive with IRQ, this is the only supported variant at the moment 
+#const uartUseBufferedOut* : bool = false # set UartBufferOutCharSize = 1 if this flag is: false
+#const uartOutBuffer_flush_blocking* : bool = true # only sync out supported for now  
+#const uartUseBufferedRxIRQ* : bool = true # buffered receive with IRQ, this is the only supported variant at the moment 
 const uartEchoOnInput* : bool = true
 const config_consoleNewlineChar* : char = '\n'
 const enableMMU* : bool = false # true is wip

@@ -215,6 +215,8 @@ proc stdlibwrapper_initialize_board(){.exportc:"_hal_initialize_board",cdecl.}  
   uartOutputBuffer.reset()
   timerBuffer.reset()
 
+  disableStdioBuffs()
+
   when board == "raspberry_pi1":
     # hard read core freq
     if not hal_mbox0propertyChan8_isMboxFull():

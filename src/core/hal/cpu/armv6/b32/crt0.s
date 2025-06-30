@@ -18,6 +18,8 @@
 .section "boot","ax" 
 .text
 .code 32
+.cpu arm1176jzf-s
+.fpu vfp
 .global _start
 .global vectors_end
 .extern GlobalStackSentinel
@@ -25,7 +27,9 @@
 .global _switch_context
 .global _ret_call
 .global _update_env
+.global _enable_fp
 .extern _enter_sys_ldr
+
 
 _start:
  LDR PC, reset_handler_addr
@@ -69,3 +73,15 @@ _ret_call:
 
 _el:
  bl _enter_sys_ldr  @for safety reasons
+
+
+_enable_fp:
+  @ enable fpu
+  mrc p15, 0, r0, c1, c0, 2
+  orr r0,r0,#0x300000 ;@ single precision
+  orr r0,r0,#0xC00000 ;@ double precision
+  mcr p15, 0, r0, c1, c0, 2
+  mrc p15, 0, r0, c7, c5, 4 @isb
+  mov r0,#0x40000000
+  fmxr fpexc,r0
+  bx lr

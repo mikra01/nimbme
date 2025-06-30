@@ -35,16 +35,16 @@ proc write( filedesc : cint, data : cstring, size : cint) : cint {.exportc:"_wri
   # file: stdin = 0 / stdout = 1 / stderr = 2
   # let p = $data
   if filedesc >= 0 and filedesc <= 2:
-    when uartUseBufferedOut:
-      when UserDebugEchoPID:
-        let pid = getActivePID()
-        if pid < 99:
-          uartOutputBuffer.putVal(cast[char](pid+0x30))
-          uartOutputBuffer.putVal(':')
-      
-      for i in 0 .. size-1:
-        uartOutputBuffer.putVal(data[i])
-    else:
+    #when uartUseBufferedOut:
+    #  when UserDebugEchoPID:
+    #    let pid = getActivePID()
+    #    if pid < 99:
+    #      uartOutputBuffer.putVal(cast[char](pid+0x30))
+    #      uartOutputBuffer.putVal(':')
+    #  
+    #  for i in 0 .. size-1:
+    #    uartOutputBuffer.putVal(data[i])
+    #else:
       when UserDebugEchoPID:
         let pid = getActivePID()
         if pid < 99:
@@ -244,6 +244,7 @@ proc newlibRead(filedesc : cint, charptr : pointer, len : cint) : cint {.exportc
 
 type modeT {.importc: "mode_t", header:"<stddef.h>", final, pure.} = object
 let SIFCHR {.importc:"S_IFCHR",nodecl.} : modeT
+let NOBUF {.importc:"_IONBF",header:"<stdio.h>".} : cint
 type devT {.importc: "dev_t", header:"<stddef.h>", final, pure.} = object
 type inoT {.importc: "ino_t", header:"<stddef.h>", final, pure.} = object
 type nlinkT {.importc: "nlink_t", header:"<stddef.h>", final, pure.} = object
@@ -402,6 +403,13 @@ proc clock_nanosleep(clockId: ClockIdT, flags : int, rqtp : ptr Timespec, rmtp :
 proc newlibTimes( tms: ptr Tms) : cint {.importc:"_times",codegenDecl: "$# __attribute__((used)) $#$#",cdecl.} =
   errno = EACCES
   return -1
+
+proc setvBuf*(f : File, buf : ptr char, mode : cint, s : sizeT ){.cdecl,used,importc:"malloc_stats".}
+
+proc disableStdioBuffs()=
+  setvBuf(stdout, nil, NOBUF, cast[sizeT](0));
+  setvBuf(stdin, nil, NOBUF, cast[sizeT](0));
+  setvBuf(stderr, nil, NOBUF, cast[sizeT](0));
 
 
 # FIXME: impl posix realtime signal handling
