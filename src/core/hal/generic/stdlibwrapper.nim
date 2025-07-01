@@ -35,15 +35,15 @@ proc write( filedesc : cint, data : cstring, size : cint) : cint {.exportc:"_wri
   # file: stdin = 0 / stdout = 1 / stderr = 2
   # let p = $data
   if filedesc >= 0 and filedesc <= 2:
-    #hal_uart_0_strout_blocking(data,size)
     when UserDebugEchoPID:
       let pid = getActivePID()
-      if pid < 99:
+      if pid < 99 and size > 1:
         uartOutputBuffer.putVal(cast[char](pid+0x30))
         uartOutputBuffer.putVal(':')
     for i in 0 .. size-1:
       uartOutputBuffer.putVal(data[i])      
       #hal_uart_0_EnableTxIRQ()  
+    # uartOutputBuffer.putVal(config_consoleNewlineChar)  
   else:
     errno = EBADF
     return -1
