@@ -29,7 +29,7 @@ type
     MboxPropertyResp* = tuple[pid: ProcessId, mboxNum: int, val1 : uint32, val2: uint32]
 
     PropertyTarget*  = enum MacAddr = 0, SysThrottled = 1, CoreFrequencyMeasured = 2, ArmFrequencyMeasured = 3, 
-      CoreTemp, CoreVoltage, MemoryArm, MemoryVC, FirmwareRevision, BoardModel, BoardRevision, BoardSerial
+      CoreTemp, CoreVoltage, MemoryArm, MemoryVC, FirmwareRevision, BoardModel, BoardRevision, BoardSerial, CoreFrequency
     RequestType = enum br8,br4  
     VCRawResponse* = tuple[res1 : uint32,res2:uint32]  
 
@@ -59,6 +59,16 @@ type
     bufsize: uint32
     tagreq: uint32
     rvals* : array[2,uint32]
+    endtag: uint32
+ 
+  ClockRequest* {.packed.} = object
+  # todo: better names
+    size: uint32 = 38 
+    code: uint32
+    tag: MboxTag
+    bufsize: uint32
+    tagreq: uint32
+    rvals* : array[3,uint32]
     endtag: uint32
 
   FourByteRequest* {.packed.} = object  # deprecate. same layout than EightByteRequest
@@ -151,6 +161,7 @@ var hal_mbox0propertyChan8_4bReq{.align(16).} : FourByteRequest
 
 var hal_mbox0propertyChan8_slot1{.align(16).} : EightByteRequest 
 var hal_mbox0propertyChan8_slot2{.align(16).} : EightByteRequest 
+var hal_mbox0propertyChan8_cl{.align(16).} : ClockRequest
 
 template hal_mbox0propertyChan8_initEightByteRequest(targetTag : MboxTag, subSystem : MboxTag) =
   # message for clockrate
@@ -174,6 +185,19 @@ template hal_mbox0propertyChan8_initFourByteRequest(targetTag : MboxTag, subSyst
   hal_mbox0propertyChan8_4bReq.rvals[0] = subsystem      
   hal_mbox0propertyChan8_4bReq.endtag = 0   # fixed
 
+
+template hal_mbox0propertyChan8_initClockRequest(clockId : MboxTag, freqHz : uint32) =
+  hal_mbox0propertyChan8_cl.size = 36
+  hal_mbox0propertyChan8_cl.code = REQUEST_CODE
+  hal_mbox0propertyChan8_cl.tag = TAG_SET_CLOCK_RATE
+  hal_mbox0propertyChan8_cl.bufsize = 12
+  hal_mbox0propertyChan8_cl.tagreq = 8
+  hal_mbox0propertyChan8_cl.rvals[0] = clockId # clockid
+  hal_mbox0propertyChan8_cl.rvals[1] = freqHz # 48000000 # 48mhz
+  hal_mbox0propertyChan8_cl.rvals[2] = 0 # skip_turbo
+  hal_mbox0propertyChan8_cl.endtag = 0
+
+
 template hal_mbox0propertyChan8_maskVCResponseChannelProp( resp : uint32) : uint32 =
   resp and 0xF.uint2
 
@@ -190,6 +214,15 @@ template hal_mbox0propertyChan8_sendFourByteRequest() =
   let msgWithChan = msgAddr or chan8Prop # and 0xF.uint32)
   hal_mbox0propertyChan8_setMBoxVal(MBOX_WRITE,msgWithChan.uint32)  
 
+proc hal_mbox0propertyChan8_sendClockSetRequest(clockId : MboxTag, freqHz : uint32) =
+  hal_mbox0propertyChan8_initClockRequest(clockId,freqHz)
+  let msgAddr = cast[uint32](addr hal_mbox0propertyChan8_cl)
+  let msgWithChan = msgAddr or chan8Prop # and 0xF.uint32)
+  hal_mbox0propertyChan8_setMBoxVal(MBOX_WRITE,msgWithChan.uint32)  
+
+proc hal_mbox0propertyChan8_isClockResponseOK*() : bool =
+  hal_mbox0propertyChan8_cl.code == RESPONSE_OK
+
 template hal_mbox0propertyChan8_hasVCResponse*() : bool =
   (hal_mbox0propertyChan8_getMBoxVal(MBOX_STATUS) and 0xf.uint32) > lastResponseCtrVal # == 1 
 
@@ -201,7 +234,7 @@ template hal_mbox0propertyChan8_getVCResponse*() : uint32 =
 
 proc hal_mbox0propertyChan8_isResponseOK*(propTarget : PropertyTarget) : bool =
    result = case propTarget:
-    of MacAddr,ArmFrequencyMeasured,CoreFrequencyMeasured,CoreTemp,CoreVoltage,MemoryVC,MemoryArm,BoardSerial:
+    of MacAddr,ArmFrequencyMeasured,CoreFrequencyMeasured,CoreTemp,CoreVoltage,MemoryVC,MemoryArm,BoardSerial,CoreFrequency:
       hal_mbox0propertyChan8_8bReq.code == RESPONSE_OK
     of FirmwareRevision,BoardModel,BoardRevision:
       hal_mbox0propertyChan8_4bReq.code == RESPONSE_OK        
@@ -220,6 +253,9 @@ proc hal_mbox0propertyChan8_sendVCRequest*(propTarget : PropertyTarget) =
       hal_mbox0propertyChan8_sendEightByteRequest      
     of PropertyTarget.CoreFrequencyMeasured:
       hal_mbox0propertyChan8_initEightByteRequest(TAG_GET_CLOCK_RATE_MEASURED,CLOCK_ID_CORE)
+      hal_mbox0propertyChan8_sendEightByteRequest
+    of PropertyTarget.CoreFrequency:
+      hal_mbox0propertyChan8_initEightByteRequest(TAG_GET_CLOCK_RATE,CLOCK_ID_CORE)
       hal_mbox0propertyChan8_sendEightByteRequest
     of PropertyTarget.CoreTemp:
       hal_mbox0propertyChan8_initEightByteRequest(TAG_GET_TEMPERATURE,TEMP_ID_CORE)
@@ -256,7 +292,7 @@ proc hal_mbox0propertyChan8_getRawValueFor*(propTarget : PropertyTarget) : VCRaw
     of MacAddr,MemoryArm,MemoryVC,BoardSerial:
       discard hal_mbox0propertyChan8_getVCResponse
       (hal_mbox0propertyChan8_8bReq.rvals[0],hal_mbox0propertyChan8_8bReq.rvals[1])
-    of ArmFrequencyMeasured,CoreFrequencyMeasured,CoreTemp,CoreVoltage:
+    of ArmFrequencyMeasured,CoreFrequencyMeasured,CoreTemp,CoreVoltage,CoreFrequency:
       discard hal_mbox0propertyChan8_getVCResponse
       ( hal_mbox0propertyChan8_8bReq.rvals[1] , 0 )
     else:

@@ -18,7 +18,6 @@
 # retargeted syscalls 
 # contain board/platform dependent code (references some linkerscript variables/memory)
 # todo: recompile newlib for non-reeentrant mode
-# wip
 
 import ../../env
 
@@ -26,35 +25,25 @@ import ../../env
 # _fwrite_r
 type sizeT {.importc: "size_t", header:"<stddef.h>", final, pure.} = object
 var errno {.importc, header: "<errno.h>".}: cint
+# TODO: retarget __errno() for tls
 let EBADF {.importc:"EBADF",nodecl.} : cint
 
 proc write( filedesc : cint, data : cstring, size : cint) : cint {.exportc:"_write",codegenDecl: "$# __attribute__((used)) $#$#",cdecl.} =
-  # hal_uart_0_strout "wg"
+  # always buffered out
   errno = 0.cint
   # retarget newlib's write 
   # file: stdin = 0 / stdout = 1 / stderr = 2
   # let p = $data
   if filedesc >= 0 and filedesc <= 2:
-    #when uartUseBufferedOut:
-    #  when UserDebugEchoPID:
-    #    let pid = getActivePID()
-    #    if pid < 99:
-    #      uartOutputBuffer.putVal(cast[char](pid+0x30))
-    #      uartOutputBuffer.putVal(':')
-    #  
-    #  for i in 0 .. size-1:
-    #    uartOutputBuffer.putVal(data[i])
-    #else:
-      when UserDebugEchoPID:
-        let pid = getActivePID()
-        if pid < 99:
-          hal_uart_0_chrout_blocking(cast[char](pid+0x30))
-          hal_uart_0_chrout_blocking(':')
-
-      for i in 0 .. size-1:
-        hal_uart_0_chrout_blocking(data[i])
-        
-    
+    #hal_uart_0_strout_blocking(data,size)
+    when UserDebugEchoPID:
+      let pid = getActivePID()
+      if pid < 99:
+        uartOutputBuffer.putVal(cast[char](pid+0x30))
+        uartOutputBuffer.putVal(':')
+    for i in 0 .. size-1:
+      uartOutputBuffer.putVal(data[i])      
+      #hal_uart_0_EnableTxIRQ()  
   else:
     errno = EBADF
     return -1
@@ -87,6 +76,7 @@ proc newlibExit(status : cint) {.exportc:"_exit",codegenDecl: "$# __attribute__(
 
 const CLOCK_THREAD_CPUTIME_ID = 3  
 
+# _sbrk_r, _fstat_r, _isatty_r, _close_r, _lseek_r, _write_r, _read_r
 
 # todo: eval if import extern values as procs occupies no ram
 
@@ -121,6 +111,15 @@ type
 
 proc newlibMalloc_stats*(){.cdecl,used,importc:"malloc_stats".}
 proc newlibMall_info*() : Mallinfo {.cdecl,used,importc:"mallinfo".}
+
+let NOBUF{.importc:"_IONBF",header:"<stdio.h>".} : cint
+
+proc setvBuf*(f : File, buf : ptr char, mode : cint, s : sizeT ){.cdecl,used,importc:"setvbuf",header:"<stdio.h>".}
+
+proc disableStdioBuffs()=
+  setvBuf(stdout, nil, NOBUF, cast[sizeT](0));
+  setvBuf(stdin, nil, NOBUF, cast[sizeT](0));
+  setvBuf(stderr, nil, NOBUF, cast[sizeT](0));
 
 
 proc newlibPrintSysvals() = 
@@ -237,14 +236,13 @@ proc newlibRead(filedesc : cint, charptr : pointer, len : cint) : cint {.exportc
     cp = cast[ptr char](incp)
 
   when uartEchoOnInput:
-    hal_uart_0_writestr(istr.cstring,istr.len.cint)  
+    hal_uart_0_strout_blocking(istr.cstring,istr.len.cint)  
 
   return (istr.len).cint 
 
 
 type modeT {.importc: "mode_t", header:"<stddef.h>", final, pure.} = object
 let SIFCHR {.importc:"S_IFCHR",nodecl.} : modeT
-let NOBUF {.importc:"_IONBF",header:"<stdio.h>".} : cint
 type devT {.importc: "dev_t", header:"<stddef.h>", final, pure.} = object
 type inoT {.importc: "ino_t", header:"<stddef.h>", final, pure.} = object
 type nlinkT {.importc: "nlink_t", header:"<stddef.h>", final, pure.} = object
@@ -283,7 +281,7 @@ proc newlibExecve( charptr_name : pointer, charptrptr_argv : pointer, charptrptr
 
 
 proc newlibFStat( filedesc : cint, st : ptr Stat) : cint {.exportc:"_fstat",codegenDecl: "$# __attribute__((used)) $#$#",cdecl.} =
-  hal_uart_0_strout_blocking "fstat called",12
+  # hal_uart_0_strout_blocking "fstat called",12
   errno = 0
   st.st_mode = SIFCHR # 
 
@@ -381,7 +379,8 @@ proc sleep(seconds : cuint) : cint {.exportc,codegenDecl: "$# __attribute__((use
 
 proc nanosleep(rqtp : ptr Timespec, rmtp : ptr Timespec) : cint {.exportc,codegenDecl: "$# __attribute__((used)) $#$#",cdecl.}  = 
   if not isSys(getActivePID()): # sys never sleeps
-    waitAndResume(cast[uint](rqtp.tv_nsec div 1000000)) #rqtp.tv_nsec div 1000000
+    # interrupt while sleep not possible so rmtp is left open
+    waitAndResume(cast[uint](rqtp.tv_nsec div 1000000)) 
   return 0
 
 proc clock_nanosleep(clockId: ClockIdT, flags : int, rqtp : ptr Timespec, rmtp : ptr Timespec) : cint {.exportc,codegenDecl: "$# __attribute__((used)) $#$#",cdecl.} = 
@@ -397,20 +396,12 @@ proc clock_nanosleep(clockId: ClockIdT, flags : int, rqtp : ptr Timespec, rmtp :
 # when board == "raspberry_pi1":
 # todo: hint on tls
 # arm11 is A-Profile, so TPIDRURW should be present
-# hint on mc
+# hint on multicore
 # per core: own scheduler, heap, tls / proc is always pinned (no mig) 
 
 proc newlibTimes( tms: ptr Tms) : cint {.importc:"_times",codegenDecl: "$# __attribute__((used)) $#$#",cdecl.} =
   errno = EACCES
   return -1
-
-proc setvBuf*(f : File, buf : ptr char, mode : cint, s : sizeT ){.cdecl,used,importc:"malloc_stats".}
-
-proc disableStdioBuffs()=
-  setvBuf(stdout, nil, NOBUF, cast[sizeT](0));
-  setvBuf(stdin, nil, NOBUF, cast[sizeT](0));
-  setvBuf(stderr, nil, NOBUF, cast[sizeT](0));
-
 
 # FIXME: impl posix realtime signal handling
 type SIGNAL = enum SIGABRT,SIGFPE,SIGILL,SIGINT,SIGSEGV,SIGTERM

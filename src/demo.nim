@@ -32,7 +32,7 @@
 # 
 # most examples are from the nimdocs
 
-import std/[strutils, times, volatile,macros,lists,math,streams,typetraits,syncio]
+import std/[os,strutils,times,volatile,macros,lists,math,streams,typetraits,syncio]
 import core/hal/hal
 import core/[env,nvram,event,xresourcelock]
 
@@ -40,7 +40,6 @@ import core/utils/[charbuffer,memorystream]
 
 from std/fenv import epsilon
 from std/random import rand
-import std/[os, strutils]
 
 
 type
@@ -215,9 +214,6 @@ proc doTestAll()=
 
   stackSentinelTest()
 
-  if uartInputBuffer.hasVal():
-    hal_uart_0_chrout(uartInputBuffer.fetchVal())
-
   
   echo "type 'P' to spawn new process - after that the pid to start (0-9) - 'x' to exit demo"
 
@@ -232,7 +228,7 @@ proc doTestAll()=
   
   while uartOutputBuffer.hasVal(): # flush buffer blocking variant
     let x = uartOutputBuffer.fetchVal()
-    hal_uart_0_chrout(x)
+    hal_uart_0_putc_blocking(x)
 
 
 try:
@@ -250,6 +246,6 @@ finally:
   stackSentinelTest()
   while uartOutputBuffer.hasVal(): # flush buffer blocking variant
     let x = uartOutputBuffer.fetchVal()
-    hal_uart_0_chrout(x)
+    hal_uart_0_putc_blocking(x)
   when board == "raspberry_pi1":    
     enterMemLoader()   

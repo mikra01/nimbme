@@ -59,11 +59,11 @@ _ldr_sect_start = ORIGIN(ldr);
 SECTIONS
 {
 
-.boot           : ALIGN(8)
+.boot           : 
   { KEEP(startup.o)
   } > boot
 
-    .text : ALIGN(8)
+    .text : ALIGN(4)
     {
         *(.text .text.*)
         *(.rodata*)
@@ -89,19 +89,19 @@ SECTIONS
          _stack_top = .; 
     } > ram
 
-    .bss (NOLOAD) : ALIGN(8)
+    .bss (NOLOAD) : ALIGN(4)
     {
         *(.bss .bss.*)
         *(COMMON)
     } > ram
 
-    .nvram (NOLOAD) : ALIGN(8)
+    .nvram (NOLOAD) : ALIGN(4)
     {
     KEEP(*(.nvram))
-    . = ALIGN(8);
+  
     } > nvram
 
-    .data :  ALIGN(8)
+    .data :  ALIGN(4)
     {  
         *(.data .data.*)
     } > ram AT >flash

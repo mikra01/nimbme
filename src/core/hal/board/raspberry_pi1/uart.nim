@@ -15,117 +15,175 @@
 #  along with this program. If not, see <https://www.gnu.org/licenses/>.
 # 
 
-proc hal_uart_0_writestr*( p1: cstring, len: cint) =
-  #when uartUseBufferedOut:
-  #  when UserDebugEchoPID:
-  #    let pid = getActivePID()
-  #    if pid < 99:
-  #      uartOutputBuffer.putVal(cast[char](pid+0x30))
-  #      uartOutputBuffer.putVal(':')
-  #    
-  #  for i in 0 .. len-1:
-  #    uartOutputBuffer.putVal(p1[i])
-  #else:
-  miniuart_write_str_blocking(p1,len)
-        
-  #when not uartOutBuffer_flush_blocking:
-  #  # fixme: check if transmission running. if so, do nothing
-  #  hal_cpu_doSoftwareIRQ(HALAPI_SVC_UART_0_TX)    
+type 
+    UARTREG* =  int
+    UARTPTR* = ptr array[18,UARTREG]
+    
+const 
+    UART0BASE* : UARTPTR = cast[UARTPTR](0x20201000)
+    UartDR* : UARTREG = 0x0 # datareq
+    UartFR* : UARTREG = 0x6
+    UartIBRD* : UARTREG = 0x9  # integer baud rate divisor
+    UartFBRD* : UARTREG = 0xa # fractional baudrate reg
+    UartMIS* : UARTREG = 0x10 # mask interrupt status
+    UartICR* : UARTREG = 0x11 # interrupt clear register
+    UartLCRH* : UARTREG = 0xb
+    UartCR* : UARTREG = 0xc
+    UartIMSC* : UARTREG = 0xe # 0x38
 
 
-proc hal_flush_uart_0_async*(){.inline.} =
-  discard
-  #hal_uart_0_EnableTxIRQ
-  #hal_cpu_doSoftwareIRQ(HALAPI_SVC_UART_0_TX)   
-
-#template hal_uart_0_WriteChar*(v : char) =
-#  discard
-#  #volatileStore(HALUart0BASE,v)
-
-template hal_uart_0_TransmitFifoFull : bool =
-  false
-  #(volatileLoad(HALUartFR) and HALUartFR_TXFF) > 0
+const
+  IRQ_ENABLE2 = 0x2000B214.uint32 # 218
+  IRQ_DISABLE2 = 0x2000B220.uint32
+  IRQ_PEND2* =   0x2000B208.uint32
+  IRQ_PENDBASIC* = 0x2000B200.uint32
 
 
-proc hal_uart_0_strout_blocking*( p1: cstring, size : int ) =
-  miniuart_write_str_blocking(p1,size)
-  #discard
-  #let strl = p1.len
-  #for i in 0..strl-1:
-  #  while hal_uart0TransmitFifoFull:
-  #    discard
-  #  volatileStore(HALUart0BASE,p1[i])
+template hal_uart_getVal*(idx : UARTREG) : uint =
+    hal_cpu_getDWord(cast[ptr uint](addr UART0BASE[idx]))
 
-proc hal_uart_0_chrout_blocking*(c1 :char){.inline.}=
-  miniuart_put_char_blocking(c1)
+template hal_uart_setVal*(idx : UARTREG, val : uint) =
+    hal_cpu_storeDWord(cast[ptr uint](addr UART0BASE[idx]) ,val)
 
-proc hal_uart_0_chrout*(c1 : char) =
-  # fixme: change to noneblocking variant
-  miniuart_put_char_blocking(c1)
-  # discard
-  #while hal_uart0TransmitFifoFull:
-  #  discard 
-  #volatileStore(HALUart0BASE,v)
 
-proc hal_uart_flush_0_sync*(){.inline.} =
-  discard
-  #while uartOutputBuffer.hasVal(): 
-  #  let x = uartOutputBuffer.fetchVal()
-  #  hal_uart_0_chrout(x)  
-
+template setupUartPullUpResistorTxRx(val : uint) =
+  # TODO: move2gpioaux
+  GPPUD.hal_gpioaux_setGpVal val # 2: pullup 1:pulldown 0:off
+  for i in 0..150: 
+    rcall(i)
+  GPPUDCLK0.hal_gpioaux_setGpVal (1.uint shl 14) or (1.uint shl 15) # attach clock for gpio14/15
+  for i in 0..150: 
+    rcall(i)
+  GPPUDCLK0.hal_gpioaux_setGpVal 0 # remove clock
 
 
 template hal_uart_0_EnableRxIRQ() = 
-  discard
-  #volatileStore(HALUartIMSC,volatileLoad(HALUARTIMSC) or 0x10) #    
+  UartIMSC.hal_uart_setVal(UartIMSC.hal_uart_getVal() or (1 shl 4) )
 
-template hal_uart_0_EnableTxIRQ() = 
- discard # used
+template hal_uart_0_EnableRxTimeoutIRQ() = 
+  UartIMSC.hal_uart_setVal(UartIMSC.hal_uart_getVal() or (1 shl 6) )  
+
+template hal_uart_0_EnableTxIRQ*() = 
+   UartIMSC.hal_uart_setVal(UartIMSC.hal_uart_getVal() or  (1 shl 5).uint )
 
 template hal_uart_0_DisableTxIRQ() = 
-  discard
+    UartIMSC.hal_uart_setVal(UartIMSC.hal_uart_getVal() and not (1 shl 5).uint )
   #volatileStore(HALUartIMSC,volatileLoad(HALUARTIMSC) and (not 0x20.uint)) #   
 
 template hal_uart_0_DisableRxIRQ() = 
-  discard
+  UartIMSC.hal_uart_setVal( UartIMSC.hal_uart_getVal() and (not (1 shl 4).uint) )
   #volatileStore(HALUartIMSC,volatileLoad(HALUARTIMSC) and (not 0x10.uint)) #   
 
-template hal_uart_0_ClearReceiveInterrupt* =  
-  discard
-  #volatileStore(HALUartICR, HALUARTICR_RXIC)
+template hal_uart_0_DisableRxTimeoutIRQ() = 
+  UartIMSC.hal_uart_setVal( UartIMSC.hal_uart_getVal() and (not (1 shl 6).uint) )
 
-template hal_uart_0_ClearTransmitInterrupt* =  
-  discard
-  # volatileStore(HALUartICR,HALUARTICR_TXIC)
+template hal_uart_0_ClearReceiveInterrupt =  
+  UartICR.hal_uart_setVal  (1 shl 4).uint
 
-template hal_uart_0_hasRXIRQ : bool = 
-  false  
+template hal_uart_0_ClearReceiveTimeoutInterrupt =  
+  UartICR.hal_uart_setVal  (1 shl 6).uint
 
-template hal_uart_0_hasTXIRQ : bool = 
-  false
+template hal_uart_0_ClearTransmitInterrupt =  
+  UartICR.hal_uart_setVal  (1 shl 5).uint
 
-template hal_uart_0_RxHasPayload* : bool =
-  miniuart_isDataReady() 
+template hal_uart_0_hasRxIRQ(misVal : uint) : bool = 
+  (misVal  and 0x10) > 0
+
+template hal_uart_0_hasRxTimeoutIRQ(misVal : uint) : bool = 
+  (misVal and 0x40) > 0  
+
+template hal_uart_0_hasTxIRQ(misVal : uint) : bool = 
+ (misVal and 0x20) > 0
 
 template hal_uart_0_ReceiverFifoEmpty* : bool =
-  false
+  (UartFR.hal_uart_getVal() and 0x10.uint) > 0
 
-template hal_uart_0_get_char_blocking* : char =
-  # deprecate
-  miniuart_get_char_blocking()
-  # cast[char](volatileLoad(HALUart0BASE))
+template hal_uart_0_TransmitFifoFull : bool =
+  (UartFR.hal_uart_getVal() and (1 shl 5).uint) > 0
 
-template hal_uart_0_get_char* : char =
-  miniuart_get_char()
+template hal_uart_0_TransmitFifoEmpty : bool =
+  (UartFR.hal_uart_getVal() and (1 shl 7).uint) > 0
 
-proc hal_uart_0_init() = 
-  discard
-  #volatileStore(HALUartCR,0x301) # enable pl011 uart rx/tx side
-  #volatileStore(HALpicINTEnable,volatileLoad(HALpicINTEnable) or (1 shl 12)) 
-  #hal_uart_0_DisableTxIRQ
+template hal_uart_0_putc(c1 : char) =
+  UartDR.hal_uart_setVal(c1.uint)
 
-  #when uartUseBufferedRxIRQ:
-  #  hal_uart_0_EnableRxIRQ
+proc hal_uart_0_putc_blocking*(c1 : char) =
+  while hal_uart_0_TransmitFifoFull:
+      discard
+  hal_uart_0_putc(c1)
+
+template hal_uart_0_getc : char =
+   cast[char](UartDR.hal_uart_getVal())
+
+proc hal_uart_0_getc_blocking*() : char =
+  while true:
+    if not hal_uart_0_ReceiverFifoEmpty:
+      break
+  hal_uart_0_getc    
+
+proc hal_uart_0_strout_blocking*( p1: cstring, size : int ) =
+  for i in 0..size-1:
+    while hal_uart_0_TransmitFifoFull:
+      discard
+    hal_uart_0_putc(p1[i])
 
 
-# TODO: implement tx-overflow fifo helper
+template hal_uart_0_enableUartIRQ() =
+   hal_cpu_storeDWord(cast[ptr uint](IRQ_ENABLE2),(1 shl (57 - 32)).uint32 )
+
+template hal_uart_0_disableUartIRQ() =
+   hal_cpu_storeDWord(cast[ptr uint](IRQ_DISABLE2),(1 shl (57 - 32)).uint32 )
+
+template hal_uart_0_isUartIrqPending() : bool =
+   (hal_cpu_getDWord(cast[ptr uint](IRQ_PEND2)) and (1 shl (57 - 32)).uint32) > 0
+
+
+proc hal_uart_0_init(ibrd : uint, fbrd:uint) = 
+  # Disable UART0
+  UartCR.hal_uart_setVal 0
+  UartIMSC.hal_uart_setVal 0
+  UartLCRH.hal_uart_setVal (0) 
+  # GPIO14/15 ALT0 (Function Select 1)
+  var t = GPFSEL1.hal_gpioaux_getGpVal
+  t = t and (not(7.uint shl 12)) # gpio14
+  t = t or (4.uint shl 12) 
+  t = t and (not(7.uint shl 15))
+  t = t or (4.uint shl 15) 
+  GPFSEL1.hal_gpioaux_setGpVal t
+
+  setupUartPullUpResistorTxRx(2)
+
+  # Clear interrupts
+  UartICR.hal_uart_setVal 0x7FF.uint
+
+  UartIBRD.hal_uart_setVal ibrd 
+  UartFBRD.hal_uart_setVal fbrd  # fraction
+  UartLCRH.hal_uart_setVal ((1 shl 4) or (3 shl 5)) # 8N1 / enable fifo
+  UartCR.hal_uart_setVal ((1 shl 0) or (1 shl 8) or (1 shl 9)) # enable uart / rx,tx
+  hal_uart_0_EnableRxIRQ
+  hal_uart_0_EnableRxTimeoutIRQ
+  hal_uart_0_enableUartIRQ
+
+template hal_uart_0_startTx*() =
+   hal_uart_0_EnableTxIRQ
+   while  uartOutputBuffer.hasVal() and (not hal_uart_0_TransmitFifoFull()):
+     hal_uart_0_putc(uartOutputBuffer.fetchVal())
+
+proc uart_process_irq*(){.inline.} =
+  if hal_uart_0_isUartIrqPending():
+    let irqmask = UartMIS.hal_uart_getVal()
+    if hal_uart_0_hasTXIRQ(irqmask):
+        while  uartOutputBuffer.hasVal() and (not hal_uart_0_TransmitFifoFull()):
+          hal_uart_0_putc(uartOutputBuffer.fetchVal())
+        if not uartOutputBuffer.hasVal():
+          hal_uart_0_DisableTxIRQ
+        hal_uart_0_ClearTransmitInterrupt
+    if hal_uart_0_hasRXIRQ(irqmask):
+      while not hal_uart_0_ReceiverFifoEmpty:
+         uartInputBuffer.putVal(hal_uart_0_getc())
+      hal_uart_0_ClearReceiveInterrupt
+    if hal_uart_0_hasRxTimeoutIRQ(irqmask):   
+      while not hal_uart_0_ReceiverFifoEmpty:
+         uartInputBuffer.putVal(hal_uart_0_getc())
+      hal_uart_0_ClearReceiveTimeoutInterrupt
+      

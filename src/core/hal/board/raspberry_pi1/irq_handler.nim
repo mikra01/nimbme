@@ -36,7 +36,8 @@ proc IRQHandler( )  {.cdecl,exportc:"irq_handler_nim",codegenDecl: "__attribute_
     hal_armnanotimer_clearIRQ()
 
 
-  miniuart_process_irq()
+  #miniuart_process_irq()
+  uart_process_irq()
 
   irqCycleStats.cyclesLastRun = hal_armcc_getCyclesDiff(cyStart)
   (irqCycleStats.cummulatedCyclesSinceStartup).inc(irqCycleStats.cyclesLastRun)  
@@ -58,17 +59,16 @@ proc IRQHandler( )  {.cdecl,exportc:"irq_handler_nim",codegenDecl: "__attribute_
 proc triggerUart0Tx(){.cdecl,exportc:"_trigger_uart_0_tx"} =
   # if not hal_uart_0_isTxIRQEnabled:
   hal_uart_0_EnableTxIRQ
-  hal_uart_0_chrout_blocking(uartOutputBuffer.fetchVal()) # initiate transmission
-
+  hal_uart_0_putc(uartOutputBuffer.fetchVal()) # initiate transmission
 
 
 proc unknownSWI(num : uint, ysp : uint,ylr : uint){.cdecl,exportc:"_other_num"}=
-  hal_uart_0_writestr "unknownSWI num ",16
-  hal_uart_0_writestr num2Hex(num),8 
-  hal_uart_0_writestr " lr:",4
-  hal_uart_0_writestr num2Hex(ylr),8 
-  hal_uart_0_writestr " and sp ",8 
-  hal_uart_0_writestr num2Hex(ysp),8
+  hal_uart_0_strout_blocking "unknownSWI num ",16
+  hal_uart_0_strout_blocking num2Hex(num),8 
+  hal_uart_0_strout_blocking " lr:",4
+  hal_uart_0_strout_blocking num2Hex(ylr),8 
+  hal_uart_0_strout_blocking " and sp ",8 
+  hal_uart_0_strout_blocking num2Hex(ysp),8
 
 proc SWIExceptionHandler() 
   {.cdecl,exportc:"swi_handler_nim", asmnostackframe.} =
@@ -126,10 +126,10 @@ proc FIQExceptionHandler( )
 
 
 proc undefExceptionHandler_nim(faddr : uint, finstr : uint){.cdecl,exportc.}=
-  hal_uart_0_writestr "undef_instruction was ",22
-  hal_uart_0_writestr num2Hex(finstr),8
-  hal_uart_0_writestr " at addr: ",10
-  hal_uart_0_writestr num2Hex(faddr),8
+  hal_uart_0_strout_blocking "undef_instruction was ",22
+  hal_uart_0_strout_blocking num2Hex(finstr),8
+  hal_uart_0_strout_blocking " at addr: ",10
+  hal_uart_0_strout_blocking num2Hex(faddr),8
 
 
 proc UndefExceptionHandler() 
@@ -154,10 +154,10 @@ proc UndefExceptionHandler()
   """
 
 proc prefetchAbortExceptionHandler_nim(faddr : uint, finstr : uint){.cdecl,exportc.}=
-  hal_uart_0_writestr "prefetchAbort_instruction was ",30
-  hal_uart_0_writestr num2Hex(finstr),8 
-  hal_uart_0_writestr " at addr: ",10
-  hal_uart_0_writestr num2Hex(faddr),8
+  hal_uart_0_strout_blocking "prefetchAbort_instruction was ",30
+  hal_uart_0_strout_blocking num2Hex(finstr),8 
+  hal_uart_0_strout_blocking " at addr: ",10
+  hal_uart_0_strout_blocking num2Hex(faddr),8
 
 proc PrefetchAbortExceptionHandler() 
   {.cdecl,exportc:"prefetch_abort_handler_nim",asmNoStackFrame.} =
@@ -192,23 +192,23 @@ proc HypTrapExceptionHandler( )
 
 proc aligmentFault(faultAddr : uint, faultInstrAddr : uint, spsr : uint){.cdecl,exportc:"alignment_fault_nim".} =
   # todo: introduce hal_logging
-  hal_uart_0_writestr("alignment_fault  ".cstring,17)
-  hal_uart_0_writestr("fault_addr:",11)
-  hal_uart_0_writestr(num2Hex(faultAddr),8)
-  hal_uart_0_writestr("fault_instr_addr:",17)
-  hal_uart_0_writestr(num2Hex(faultInstrAddr),8)
-  hal_uart_0_chrout_blocking 0xd.char
-  hal_uart_0_chrout_blocking 0xa.char
+  hal_uart_0_strout_blocking("alignment_fault  ".cstring,17)
+  hal_uart_0_strout_blocking("fault_addr:",11)
+  hal_uart_0_strout_blocking(num2Hex(faultAddr),8)
+  hal_uart_0_strout_blocking("fault_instr_addr:",17)
+  hal_uart_0_strout_blocking(num2Hex(faultInstrAddr),8)
+  hal_uart_0_putc_blocking 0xd.char
+  hal_uart_0_putc_blocking 0xa.char
   hal_cpu_resetBoard()
 
 proc genericDataAbort(faultAddr : uint, faultInstrAddr : uint, spsr : uint){.cdecl,noreturn,exportc:"generic_data_abort_nim".} =
-  hal_uart_0_writestr("generic_data_abort".cstring,18)
-  hal_uart_0_writestr("fault_addr:",11)
-  hal_uart_0_writestr(num2Hex(faultAddr),8)
-  hal_uart_0_writestr("fault_instr_addr:",17)
-  hal_uart_0_writestr(num2Hex(faultInstrAddr),8)
-  hal_uart_0_chrout_blocking 0xd.char
-  hal_uart_0_chrout_blocking 0xa.char
+  hal_uart_0_strout_blocking("generic_data_abort".cstring,18)
+  hal_uart_0_strout_blocking("fault_addr:",11)
+  hal_uart_0_strout_blocking(num2Hex(faultAddr),8)
+  hal_uart_0_strout_blocking("fault_instr_addr:",17)
+  hal_uart_0_strout_blocking(num2Hex(faultInstrAddr),8)
+  hal_uart_0_putc_blocking 0xd.char
+  hal_uart_0_putc_blocking 0xa.char
   hal_cpu_resetBoard()
 
 
@@ -227,7 +227,7 @@ proc DataAbortHandler( )
     mrc p15, 0, r0, c6, c0, 0    // read DFAR  → r1 fault addr
      
     mov     r1, lr
-    sub     r1, r1, #4              // r1 = faulted iaddr
+    sub     r1, r1, #4              // r1 = faulted fault_instr_addr
 
     mrs     r3, spsr                // r3 = faulted spsr_abt
 
@@ -301,8 +301,8 @@ proc resethandlernim() {.exportc, used, asmNoStackFrame.} =
                 mov   sp, r0
                 nop
                 nop
-                nop
- // bl _enable_fp                          
+                nop              
+ // bl _enable_fp           
  bl _bootup_copy_vec_and_reloc_data_nim
  BL _setup_heap
  BL _hal_initialize_board

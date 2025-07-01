@@ -92,8 +92,8 @@ template receiveNibble() : byte =
   var ca : char = 0x0.char 
   var cacount = 0
   while cacount == 0:
-    if hal_uart_0_RxHasPayload:
-      ca = hal_uart_0_get_char
+    if not hal_uart_0_ReceiverFifoEmpty:
+      ca = hal_uart_0_getc
       inc cacount
   char2Nibble(ca)    
 
@@ -102,8 +102,8 @@ template receiveByte() : byte =
   var cacount = 1
   while cacount <= 2:
     if ca[cacount-1] == 0x0.char:
-       if hal_uart_0_RxHasPayload:
-         ca[cacount-1] = hal_uart_0_get_char
+       if not hal_uart_0_ReceiverFifoEmpty:
+         ca[cacount-1] = hal_uart_0_getc
          inc cacount
   char2Byte(ca[0],ca[1])
 
@@ -136,11 +136,9 @@ proc processSrec() : SrecResult  {.used,inline.} =
   var moreRecs : bool = true
   var statusCode : int = 0
   while true:
-    if hal_uart_0_RxHasPayload:
-      iChar = hal_uart_0_get_char     
+    if not hal_uart_0_ReceiverFifoEmpty:
+      iChar = hal_uart_0_getc     
 
-      if iChar == 0xd.char or iChar == 0xa.char:
-        continue
       if iChar == 'S':
 
         var bytecount,bytes2pad,datacount : int = 0
@@ -238,9 +236,9 @@ while true:
       abort = true
     else:
       if abort:
-        hal_uart_0_chrout '!'
+        hal_uart_0_putc '!'
       else:  
-        hal_uart_0_chrout '.'            
+        hal_uart_0_putc '.'            
   else:
       hal_uart_0_strout_blocking(lastErrMsg,lastErrMsg.len)
       hal_uart_0_strout_blocking(retryMsg,retryMsg.len)

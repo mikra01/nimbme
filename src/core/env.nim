@@ -25,16 +25,6 @@ import xresourcelock, perfstats
 import event,audittrail
 
 
-#var currTestTaskContext* : ArmCpuState
-
- # todo: track registered events
-
-#var runningTask : ProcControlBlockPtr
-#var globalEventQueue : CBuffer[DefaultRuntimeQueueSize shl 1,ProcControlBlockPtr]
-# task_queues: initializing,ready, running, waiting, suspended   
-
-
-
 proc initializeEnvironment*() =
   setActivePID(PID_SYS)
   environmentContext.stackPool = newMemPool(MemPoolBufferSize(UserProcessStackSize_bytes),MaxUserProcessCount,cast[pointer](addr fixedStackSpace))
@@ -268,10 +258,11 @@ proc runtimeDispatcherDemoWithExit*(exitChar : char, usrProc : ProcessHook)=
 
     if uartOutputBuffer.hasVal(): # flush buffer blocking variant
        let x = uartOutputBuffer.fetchVal()
-       hal_uart0_chrout(x)
+       hal_uart_0_putc_blocking(x)
 
     processXLockRequests()
     processMboxRequests()     
+
     
     # non-priority basic round robin scheduling
     environmentContext.running.reset()
@@ -293,6 +284,9 @@ proc runtimeDispatcherDemoWithExit*(exitChar : char, usrProc : ProcessHook)=
     if timerBuffer.hasVal():
       environmentContext.sysTimerPool.periodicTimebasedWorkLoop(cast[uint](timerBuffer.fetchVal()))
    
+      if uartOutputBuffer.hasVal(): 
+        hal_uart_0_startTx()    
+
       if uartInputBuffer.hasVal():
         c = uartInputBuffer.skipAndfetchLastVal().lastVal # peekValWritePos() 
         
@@ -315,7 +309,7 @@ proc runtimeDispatcherDemoWithExit*(exitChar : char, usrProc : ProcessHook)=
         elif c == 'T':
             echo $environmentContext.sysTimerPool
         else:  
-          hal_uart0_chrout(c)    
+          hal_uart_0_putc_blocking(c)    
        
         if c.isDigit():
           let cnum : ProcessID = (cast[int](c)-0x30).toPID

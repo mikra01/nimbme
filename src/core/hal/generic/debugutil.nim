@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <https://www.gnu.org/licenses/>.
 # 
-proc debugutil_dumpMem2StdOut*(memstart : ptr uint, numberOfDWords : int) {.inline.}=
+proc debugutil_dumpMem2StdOut*(memstart : ptr uint, numberOfDWords : int){.inline.}=
     usePtr[uint]:
       var memptr : ptr uint = memstart
       var charbuff : array[9,char]
@@ -24,5 +24,5 @@ proc debugutil_dumpMem2StdOut*(memstart : ptr uint, numberOfDWords : int) {.inli
         hal_uart_0_strout_blocking ": ",2
         strutil_hex2CharL(cast[uint32](memptr[i]),charbuff)
         hal_uart_0_strout_blocking addr charbuff ,8
-        hal_uart_0_chrout_blocking config_consoleNewlineChar
+        hal_uart_0_putc_blocking config_consoleNewlineChar
 

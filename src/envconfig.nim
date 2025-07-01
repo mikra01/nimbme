@@ -42,6 +42,11 @@ const CycleCounterPrescalerActive* : bool = false # 64
 const config_uartXon* : char = 17.char
 const config_uartXoff* : char = 19.char
 const config_uartBaudRate* : uint = 3000000
+# env uses Pl011-uart
+const config_uartPl11Clock* : uint = 48000000 # in hz - works with max baudrate 1200000 -- higher clock is not running properly
+# formula baudrate pl11 : UARTCLK / (16 × (IBRD + FBRD / 64)) 
+const config_uartPl11IBRD* : uint = 2    # 16bit width at 1200000baud / 48mHz clock
+const config_uartPl11FBRD* : uint = 32   # 6bit width / val at 1200000baud / 48mHz clock
 #const uartUseBufferedOut* : bool = false # set UartBufferOutCharSize = 1 if this flag is: false
 #const uartOutBuffer_flush_blocking* : bool = true # only sync out supported for now  
 #const uartUseBufferedRxIRQ* : bool = true # buffered receive with IRQ, this is the only supported variant at the moment 

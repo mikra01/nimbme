@@ -55,11 +55,11 @@ macro makeIncludeStrLit(
   newTree(nnkIncludeStmt, newLit(arg) )
 
 proc newlibPrintSysvals*()
-proc hal_uart_0_init*()
+
 proc hal_uart_0_strout_blocking*(p1 : cstring,size : int){.inline.}
-proc hal_uart_0_chrout*(c1 : char){.inline.}
-proc hal_uart_0_chrout_blocking*(c1 : char){.inline.}
-# fixme: change name to putc / getc
+proc hal_uart_0_putc_blocking*(c1 : char){.inline.}
+proc hal_uart_0_getc_blocking*() : char {.inline.}
+# blocking variants for debug purpose (usage inside interrupt/exception/ possible)
 
 include generic/consts
 include generic/charutils
@@ -214,27 +214,29 @@ proc stdlibwrapper_initialize_board(){.exportc:"_hal_initialize_board",cdecl.}  
   uartInputBuffer.reset()
   uartOutputBuffer.reset()
   timerBuffer.reset()
-
   disableStdioBuffs()
 
   when board == "raspberry_pi1":
     # hard read core freq
     if not hal_mbox0propertyChan8_isMboxFull():
-      hal_mbox0propertyChan8_sendVCRequest(CoreFrequencyMeasured)
+      hal_mbox0propertyChan8_sendVCRequest(CoreFrequency)
       for i in 0..100000:
         rCall(i)
-      if hal_mbox0propertyChan8_isResponseOK(CoreFrequencyMeasured):
-        (hal_coreFrequency, _ ) = hal_mbox0propertyChan8_getRawValueFor(CoreFrequencyMeasured)
+      if hal_mbox0propertyChan8_isResponseOK(CoreFrequency):
+        (hal_coreFrequency, _ ) = hal_mbox0propertyChan8_getRawValueFor(CoreFrequency)
     # simply assume 250MHz if mailbox-call unsuccessful
     if hal_coreFrequency == 0:
       hal_coreFrequency = 250000000
-      # TODO: write audit entry in case of this error
+      # TODO: write audit entry in case of this error  
+    hal_mbox0propertyChan8_sendClockSetRequest(CLOCK_ID_UART,config_uartPl11Clock)
+    for i in 0..100000:
+        rCall(i)
 
     hal_armtimerTickResolutionNanos = ( 0x3b9aca00.uint div hal_corefrequency ) * 256 # only this divider is supported by bcm2835 
     hal_gpioaux_enableAux()
-    hal_miniuart_init(hal_coreFrequency,config_uartBaudRate)
+    hal_uart_0_init(config_uartPl11IBRD,config_uartPl11FBRD) 
     hal_systemtimer_1_init()
-    miniuart_enable_rx_irq()
+
 
     when config_ArmTimerLoadVal > 0:
       hal_armnanotimer_init(config_ArmTimerLoadVal)
@@ -245,6 +247,7 @@ proc stdlibwrapper_initialize_board(){.exportc:"_hal_initialize_board",cdecl.}  
     hal_timer_0_init()  # timer.nim
     hal_rtc_initRtc()     # rtc.nim
     hal_timer_0_enableIRQ() 
+
 
   hal_cpu_enableIRQ()
   initBoard()

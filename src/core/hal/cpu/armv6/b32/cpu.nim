@@ -13,8 +13,7 @@
 # 
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <https://www.gnu.org/licenses/>.
-# 
-
+#
 # utilities regarding cpu / arm1176JZF-S
 # we do not utilize the secondary interrupt controller - only the global irq handler (addr 0x18) is used 
 
@@ -30,8 +29,6 @@ type
 # A      256mb 0007/0008/0009
 # B rev2 512mb 000d/000e/000f
 # uart is pin8&10(gpio14/15) regardles of model/rev
-
-
 
 template hal_cpu_doSoftwareIRQ*(trapNum : static cint) = 
   {.emit: """ 				
@@ -112,7 +109,7 @@ proc hal_cpu_enableAligmentFault*()=
 
 proc xhal_cpu_initMMU*(){.cdecl,exportc:"xhal_cpu_initMMU".}=
   discard
-
+ 
 proc hal_cpu_undef_instruction*(){.cdecl,inline.} =
   # test helper
   asm """
@@ -133,11 +130,12 @@ proc hal_cpu_bad_jump*()=
    """
 
 # TODO: move to board specific section  
-proc hal_cpu_resetBoard*(){.cdecl,inline.}=
+proc hal_cpu_resetBoard*(){.cdecl,noreturn,inline.}=
   hal_cpu_doSoftwareIRQ(hal_consts_EnterMemLdr) 
 
 proc hal_cpu_rBoard(){.cdecl, used, noreturn, exportc:"_reset_board".}=
   hal_cpu_doSoftwareIRQ(hal_consts_EnterMemLdr)
+
 
 # TODO: implement dumping regs with lr,pc at once
 proc hal_cpu_saveAllRegisters*(ptr_dest : ptr array[13,uint]){.inline.} = 
@@ -147,7 +145,7 @@ proc hal_cpu_saveAllRegisters*(ptr_dest : ptr array[13,uint]){.inline.} =
     : [dst] "r" (`ptr_dest`)
     : "memory"
   """  
-  
+
 proc hal_cpu_saveSP*(rd : ptr ArmCpuState){.inline.} =
     let rrd = addr rd.sp
     asm """
@@ -176,8 +174,10 @@ proc hal_cpu_saveCPSR*(rd : ptr ArmCpuState){.inline.} =
 # see blurry chapt 1.3 of the bcm2835 datasheet 
 template hal_cpu_dmb()= # data memory barrier make sure following accesses are ordered
   {.emit""" 
-  __asm volatile("mov r0,#0\n mcr p15, 0, r0, c7, c10, #5\n" : : : "r0");
+
+  __asm volatile("mcr p15, 0, r0, c7, c10, #5\n" : : : "r0");
   """.}
+
 
 template hal_cpu_atomicAdd*(memptr: ptr uint32, val: uint32) =
   # to use this: mmu must be activated with Inner/Outer Write-back Shareable
