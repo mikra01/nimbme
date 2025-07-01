@@ -58,7 +58,7 @@ task build_rp1, " compile and link with arm-none-eabi-gcc toolchain ":
   var crt0  = constrCrt0(board,cpuArch)
   let asmFlags = " -march=armv6zk "
   let compilerFlags = " --cpu:arm --passC:-marm --passC:-mno-unaligned-access  --passC:-mcpu=arm1176jzf-s " 
-  let boardAndArchTune = " --os:any --mm:arc -d:useMalloc -d:posix  -d:noSignalHandler --passC:-mfpu=vfp --passC:-mfloat-abi=soft --passC:-Iout_raspberry_pi1/ "
+  let boardAndArchTune = " --os:any --mm:arc -d:useMalloc -d:posix  -d:noSignalHandler --passC:-Iout_raspberry_pi1/ " #--passC:-mfpu=vfp --passC:-mfloat-abi=soft 
   let boardAndArchTuneLdrApp = " --os:standalone --mm:none -d:useMalloc -d:noSignalHandler "
   let outname = "kernel"
   let prec = " --passL:-Lout_raspberry_pi1 --passL:-o" & outdir & "/" & "loader.elf " &  compilerFlags & boardAndArchTuneLdrApp & " -d:release -d:danger --define:board=" & board & " --define:buildVers=" & buildVers &  " --passL:-T" & linkscripttools & " --listCmd --hint:cc --nimcache:" & outdir & "/nimc src/" & 

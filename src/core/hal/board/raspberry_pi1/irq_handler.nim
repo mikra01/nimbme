@@ -302,7 +302,7 @@ proc resethandlernim() {.exportc, used, asmNoStackFrame.} =
                 nop
                 nop
                 nop
- bl _enable_fp                          
+ // bl _enable_fp                          
  bl _bootup_copy_vec_and_reloc_data_nim
  BL _setup_heap
  BL _hal_initialize_board
