@@ -114,7 +114,7 @@ proc newlibMall_info*() : Mallinfo {.cdecl,used,importc:"mallinfo".}
 
 let NOBUF{.importc:"_IONBF",header:"<stdio.h>".} : cint
 
-proc setvBuf*(f : File, buf : ptr char, mode : cint, s : sizeT ){.cdecl,used,importc:"setvbuf",header:"<stdio.h>".}
+proc setvBuf*(f : File, buf : ptr cchar, mode : cint, s : sizeT ){.cdecl,used,importc:"setvbuf",header:"<stdio.h>".}
 
 proc disableStdioBuffs()=
   setvBuf(stdout, nil, NOBUF, cast[sizeT](0));
