@@ -18,7 +18,7 @@
 import std/[strutils,volatile]
 import utils/[charbuffer,mempool,timerpool]
 import ../envconfig
-import event
+import stdtypes,event
 
 include hal/generic/consts
 
@@ -27,26 +27,6 @@ var uartOutputBuffer* : CharBuffer[UartBufferOutCharSize]
 var fixedStackSpace*{.align(8).} : array[cast[int](UserProcessStackSize_bytes) * (MaxUserProcessCount),byte]
 
 type
-  Micros32* = uint
-  Micros64* = uint64
-  IdleCallback* = proc (a: cint) {.cdecl.} # should be allowed to be used by the app
-  ProcessID* = int16
-  DeadlinedProcessID* = int16
-  PState*  = enum Free = 0, Created = 1, Running = 2, Waiting = 3, Suspended = 4, Killed = 5, Faulted = 6
-  PType* = enum OneShot = 1, Restartable = 2, Continous = 3
-  PUserPri* = enum Low = 0, Medium, High   # check if deprecated
-  
-  CPUFault* = enum cpuDataAbort= 0, cpuPrefetchAbort, cpuAlignmentFault, cpuUndefined
-  
-  CPUException* = tuple[faultType: CPUFault, eaddr : ptr uint, opcode : uint,dfsrCode:byte] # errored address and opcode
-
-  RuntimeException* = tuple[error : string, unused : int]
-  MemChunk* = tuple[memloc : pointer, size : int]
-  EventCallback* = tuple[pId : ProcessID, callback : proc ()]
-  MessageCommand* = enum WaitTillResume=0.byte,SpawnProc,KillProc,RouteMessage
-  RuntimeMessage* = tuple[piD:ProcessID,cmd:MessageCommand,unused:uint16,payload:uint]
-  StackPointer* = ptr uint
-
   ProcessWrapperHook* = proc(pid : cint, customVal : uint) {.cdecl.} # includes entry and exit
   ProcessHook* =  proc( pid : ProcessID, customVal: uint) : int
 

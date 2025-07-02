@@ -16,7 +16,7 @@
 # 
 
 import utils/circularbuffer
-import envtypes
+import stdtypes, envtypes
 
 # exclusive generic resource lock
 

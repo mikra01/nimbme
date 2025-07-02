@@ -40,8 +40,8 @@ export armcpustate
 
 import ../../core/utils/CharBuffer
 
-import ../../core/envtypes
-export envtypes
+import ../../core/[envtypes, stdtypes]
+export stdtypes,envtypes
 import ../../core/perfstats
 
 const board* {.define.}: string = "raspberry_pi1" # default
@@ -243,9 +243,9 @@ proc stdlibwrapper_initialize_board(){.exportc:"_hal_initialize_board",cdecl.}  
     else:
       hal_armnanotimer_disableTimer  
   else:
-    hal_uart_0_init()   # uart.nim
-    hal_timer_0_init()  # timer.nim
-    hal_rtc_initRtc()     # rtc.nim
+    hal_uart_0_init()   
+    hal_timer_0_init()  
+    hal_rtc_initRtc()     
     hal_timer_0_enableIRQ() 
 
 

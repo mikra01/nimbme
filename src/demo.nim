@@ -34,8 +34,7 @@
 
 import std/[os,strutils,times,volatile,macros,lists,math,streams,typetraits,syncio]
 import core/hal/hal
-import core/[env,nvram,event,xresourcelock]
-
+import core/[env,nvram,event,xresourcelock,gpio]
 import core/utils/[charbuffer,memorystream]
 
 from std/fenv import epsilon

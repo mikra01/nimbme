@@ -16,6 +16,7 @@
 # 
 
 import ../envconfig
+import stdtypes
 
 # event handling impl
 type
@@ -34,6 +35,7 @@ type
   
   EventMsg* = tuple[evt : EventType, customVal : int]
   EventEntry = tuple[msg:EventMsg, free: bool]
+  EventCallback* = tuple[pId : ProcessID, callback : proc ()]
 
 type
   EventStore*[n : static[int], EventEntry] = object

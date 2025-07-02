@@ -15,19 +15,24 @@
 #  along with this program. If not, see <https://www.gnu.org/licenses/>.
 # 
 
-proc write(chars : cstring) =
-  for i in 0..chars.len-1:
-    uartOutputBuffer.putVal(chars[i])
+import ../core/hal/hal
+import event
 
-proc debugutil_dumpMem2StdOut*(memstart : ptr uint, numberOfDWords : int){.inline.}=
-    usePtr[uint]:
-      var memptr : ptr uint = memstart
-      var charbuff : array[9,char]
-      for i in 0 .. numberOfDWords - 1:
-        strutil_hex2CharL(cast[uint32](memptr+i),charbuff)
-        write (addr charbuff)
-        uartOutputBuffer.putVal ':'
-        strutil_hex2CharL(cast[uint32](memptr[i]),charbuff)
-        write addr charbuff 
-        uartOutputBuffer.putVal config_consoleNewlineChar
+type
+  IOType*  = enum Input, Output
+  Behaviour* = enum Normal, TriState, Async
+  EdgeDetect* = enum Rising, Falling
+  LevelDetect* = enum High, Low
 
+  GpioState* {. requiresInit.}  = object
+    ioType : IOType
+    behaviour : Behaviour
+    edgeDetect : EdgeDetect
+    levelDetect : LevelDetect
+    allocatedPID* : ProcessID    # cleanup
+    callback : EventCallback
+    val : uint
+
+
+#proc newGpioState*(num : uint, cb : EventCallback ) :  GpioState =
+#    return GpioState(ioType : Input,behaviour : Normal, edgeDetect : Rising, levelDetect : High, allocatedPID: 99.toPID, callback: cb, val : num)
