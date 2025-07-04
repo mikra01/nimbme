@@ -18,7 +18,7 @@
 # TODO: move envconfig into hal folder
 const InputMsgBufferElemSize* : int = 20
 const OutputMsgBufferElemSize* : int = 20
-const UartBufferInCharSize* : int = 5 * 10
+const UartBufferInCharSize* : int = 80 * 2
 const UartBufferOutCharSize* : int = 80 * 80 # 80 chars per 80 lines - buffer should be big enough for all chars needed to send
 const DiagBufferOutElemSize* : int = 20 # diagnostics buffer element size
 
