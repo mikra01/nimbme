@@ -49,12 +49,12 @@ proc `$`*(f: TimerPool): string {.inline.} =
 proc `=copy`*(a: var TimerPool, b: TimerPool){.error.} 
 
 # timer_state templates
-proc isTimerRunning( tp: TimerPool, idx : int): bool=
+proc isTimerRunning( tp: var TimerPool, idx : int): bool=
   if idx >= 0:
     return (not tp.allTimers[idx].isFree) and tp.allTimers[idx].alarmctr > 0
   return false
 
-proc findFreeTimerIdx(tp : TimerPool ): int {.inline.} =
+proc findFreeTimerIdx(tp : var TimerPool ): int {.inline.} =
   # searches for an unused timerhdl (isFreed)
   # -1 is returned if no unused timerhdl present
   result = -1
@@ -167,7 +167,7 @@ proc deallocTimer*(tpool : var TimerPool, timerNum: int) =
       tpool.allTimers[timerNum].isFree = true
 
 
-proc getPoolStats*(tp: TimerPool): PoolStats =
+proc getPoolStats*(tp: var TimerPool): PoolStats =
   result.runningCount = tp.allocTimersCount
   result.freeCount = tp.freeTimersCount
 
