@@ -44,6 +44,32 @@ type
   ResourceRequest* = tuple[resourceId: ResourceID, pid : ProcessID, rqtype : ResourceRequestType] 
   ResourceHandle* = tuple[resourcePointer : pointer , rc :ResourceResultCode] 
 
+  DeviceId* = byte
+  DeviceType* = enum  USB_dev = 0, USB_host = 1, SPI, I2C, NET, GPIO
+  
+  DeviceMsg* = object
+    testval : int # TODO: define
+
+  DeviceIsrCallback* = proc()
+  DeviceServiceCallback* = proc()
+
+  DeviceEntry* = object 
+    isrCallback*: DeviceIsrCallback
+    serviceCall* : DeviceServiceCallback
+    isrService* : bool = false
+    ownerPid* : ProcessID
+    msgIn* : CBuffer[4,DeviceMsg]
+    msgOut* : CBuffer[4,DeviceMsg]
+    free*: bool
+
+  RegResult* = tuple[errorCode : int, dId : DeviceId]
+
+  HwDevice*[n : static[int]] = object
+    used*  : uint16 = 0
+    free*  : uint16 = 0
+    devices* : array[n,DeviceEntry]
+
+
   ProcStartupParams* = object
     executionHook* : ProcessHook         # the task which is executed
     wrapperHook* : ProcessWrapperHook    # the wrapper which manages execution -> TODO: probe exception catching
@@ -121,13 +147,17 @@ type
     deadlineProcesses* : array[4,ProcControlBlockDS]
     priorizedProcesses* : array[MaxUserProcessCount,ProcControlBlock]
     cyclesSinceStart* : uint64
-    cyclesInterrupt* : uint   
+    cyclesInterrupt* : uint
+    registeredDevices* : HwDevice[6]
 
 template `[]`*(ctx: var SysContext, idx: ProcessID): var ProcControlBlock =
   ctx.processes[cast[int](idx)]
 
 template `[]`*(ctx: var SysContext, idx: ResourceID): var Resource =
   ctx.allocatedResources[cast[int](idx)]  
+
+template `[]`*(ctx: var SysContext, idx: DeviceType): var DeviceEntry =
+  ctx.registeredDevices.devices[idx.ord]  
 
 const PID_SYS* : ProcessID = 99
 

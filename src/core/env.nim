@@ -22,8 +22,7 @@ export envconfig
 import ../core/hal/hal
 import xresourcelock, perfstats
 
-import event,audittrail
-
+import stdtypes,event,audittrail,hwdevice
 
 proc initializeEnvironment*() =
   setActivePID(PID_SYS)
@@ -41,6 +40,9 @@ proc initializeEnvironment*() =
     environmentContext.allocatedResources[i].state = ResourceState.Free
     environmentContext.allocatedResources[i].resourcePointer = addr environmentContext # artificial
     environmentContext.resourceContention[i].reset()
+
+   # set default device entries
+  hwdevice.initializeHwDevice(addr environmentContext.registeredDevices)
 
   hal_armcc_resetCycleCounter()  
     
@@ -202,6 +204,13 @@ proc resume*(){.cdecl,exportc.} =
   if not isSys(getActivePID()):
     switchCtxTo PID_SYS
 
+proc processDevices(){.inline.} =
+  for i in DeviceType:
+    if not environmentContext[i].free:
+      # TODO: check context and switch if needed
+      environmentContext[i].serviceCall()
+
+
 proc processXLockRequests(){.inline.} =
 # TODO: impl bankers algorythm or something suitable if needed
     # process resource requests: dealloc
@@ -261,7 +270,8 @@ proc runtimeDispatcherDemoWithExit*(exitChar : char, usrProc : ProcessHook)=
        hal_uart_0_putc_blocking(x)
 
     processXLockRequests()
-    processMboxRequests()     
+    processMboxRequests() 
+    processDevices()    
 
     
     # non-priority basic round robin scheduling

@@ -40,9 +40,8 @@ export armcpustate
 
 import ../../core/utils/CharBuffer
 
-import ../../core/[envtypes, stdtypes]
+import ../../core/[envtypes, stdtypes,hwdevice,perfstats]
 export stdtypes,envtypes
-import ../../core/perfstats
 
 const board* {.define.}: string = "raspberry_pi1" # default
 const cpuArch* {.define.}: string = "armv6" # default
