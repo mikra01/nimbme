@@ -34,7 +34,8 @@ proc initializeEnvironment*() =
 
   # todo: inject watchpoint
   for i in 0..MaxUserProcessCount-1 :
-    environmentContext[i.toPID].pState = PState.Free 
+    environmentContext[i.toPID].pState = PState.Free
+    initializeEvents(addr environmentContext[i.toPID].waitingEvents)
    
   for i in 0..environmentContext.allocatedResources.len-1:
     environmentContext.allocatedResources[i].state = ResourceState.Free
@@ -129,7 +130,7 @@ proc executeProcess(pid : ProcessID) : int {.inline.} =
       collectCycles(pid):
         restartProcess(pid)
     else:
-      if not environmentContext[pid].waitingEvents.hasVal() and 
+      if not environmentContext[pid].waitingEvents.isWaiting(eventTimerAlarm) and
         isValidState(pid):  
           environmentContext[pid].pState = PState.Running
           collectCycles(pid):
@@ -187,14 +188,14 @@ proc createProcess(tmpProcEntryHook : ProcessHook) : ProcessId =
 proc oneShotTimedWaitProcessCallback(tp : var TimerPool, timerNum : int){.cdecl.} =
   let processid = cast[ProcessID](tp.getUdVal(timerNum)) # instable API
   tp.deallocTimer(timerNum)
-  discard environmentContext[processid].waitingEvents.fetchVal()
+  environmentContext[processid].waitingEvents.freeEntry(eventTimerAlarm)
   setRunning processid
 
 proc waitAndResume*(durationMillisec : uint){.cdecl,exportc.} =
   let pid = getActivePID()
   let t1 = environmentContext.sysTimerPool.allocTimer(oneShotTimedWaitProcessCallback,cast[uint](pid))
   environmentContext.sysTimerPool.setAlarmMillis(t1,durationMillisec) # ms
-  environmentContext[pid].waitingEvents.putVal((TIMER_WAIT,t1))
+  environmentContext[pid].waitingEvents.registerEvent(eventTimerAlarm) 
   # TODO: implement generic future callback
   setWaiting(pid)
   # TODO: impl cycle measurement start

@@ -14,46 +14,29 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <https://www.gnu.org/licenses/>.
 # 
-
 import ../envconfig
-import stdtypes
+import stdtypes, envtypes
 
 # event handling impl
-type
-  #EventSrc* = enum IRQ_hw = 0,IRQ_sw,Device_sw,Process_sw
-  #EventPri* = enum High=0, Medium, Low
+proc initializeEvents*(evts : ptr Events) =
+  for i in 0..evts.elist.len-1:
+    evts.elist[i].free = true
+    evts.elist[i].triggered = false
 
-  EventType* = enum
-    TIMEROVERFLOW = 1.uint8, 
-    RESET_STATE = 2 # calls init and clears all events
-    HWDEVICE= 3     # hardware dependent generic event
-    SOFTDEVICE = 4  # event triggered through sw
-    TIMER_WAIT = 5
-    TIMER_FINISHED = 6
-    BufferIn
-    BufferOut
+template isEventTriggered*(evts : var Events, src : EventSource  ) : bool =
+  evts.elist[src.ord].triggered
+
+template isWaiting*(evts : var Events, src : EventSource  ) : bool =
+  not evts.elist[src.ord].free
+
+proc defaultEventCallback*()=
+  discard
+
+template registerEvent*(el : var Events, eventType : EventSource, ecb : EventCallback = defaultEventCallback, cVal : uint = 0)  =
+  el.elist[eventType.ord].free = false
+  el.elist[eventType.ord].cb = ecb
+  el.elist[eventType.ord].customVal = cval
   
-  EventMsg* = tuple[evt : EventType, customVal : int]
-  EventEntry = tuple[msg:EventMsg, free: bool]
-  EventCallback* = tuple[pId : ProcessID, callback : proc ()]
+template freeEntry*(el : var Events, eventType : EventSource) =
+  el.elist[eventType.ord].free = true
 
-type
-  EventStore*[n : static[int], EventEntry] = object
-    used  : uint16 = 0
-    free  : uint16 = 0
-    events : array[UserProcessEventSlots,EventEntry]
-
-
-proc registerEntry[n,EventEntry](eventStore : EventStore[n,EventEntry], eventType : EventType) : int =
-  discard
-
-template freeEntry[n,EventEntry](eventStore : EventStore[n,EventEntry], id : int) =
-  eventStore[id].free = true
-
-
-# distinquish between hw generated events, sw events, low prio and high prio
-proc newWaitEventMicrosec*(durationMicrosec : int) = 
-  discard
-
-proc newWaitEventNanosec*(durationNanosec : int) = 
-  discard

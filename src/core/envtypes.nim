@@ -18,7 +18,7 @@
 import std/[strutils,volatile]
 import utils/[charbuffer,mempool,timerpool]
 import ../envconfig
-import stdtypes,event
+import stdtypes
 
 include hal/generic/consts
 
@@ -29,6 +29,29 @@ var fixedStackSpace*{.align(8).} : array[cast[int](UserProcessStackSize_bytes) *
 type
   ProcessWrapperHook* = proc(pid : cint, customVal : uint) {.cdecl.} # includes entry and exit
   ProcessHook* =  proc( pid : ProcessID, customVal: uint) : int
+
+  EventId* = int
+  EventSource* = enum
+    eventTimerAlarm = 0, 
+    eventHwDEVICE        # hardware dependent generic event
+    eventSOFTDEVICE      # event triggered through sw 
+    eventBUFFER_WINDOW
+    eventIPC
+
+  EventCallBack* = proc()
+  # EventMsg* = tuple[evt : EventType, customVal : int]
+  #EventEntry* = tuple[msg:EventMsg, cb: EventCallBack, free: bool]
+
+  EventEntry* = object  # events signal the scheduler to plan in
+    cb*: EventCallBack
+    free*: bool
+    evt* : EventSource
+    triggered* : bool
+    customVal* : uint 
+
+  Events* = object
+    elist* : array[5,EventEntry] #UserProcessedEventSlots
+
 
   ResourceRequestType* = enum Alloc, RRFree
   ResourceState* = enum Free=0.uint8, Allocated 
@@ -92,7 +115,7 @@ type
     memSlot* : MemPoolSlot
     stackSentinelPtr* : ptr uint
     startupParameter* : ProcStartupParams
-    waitingEvents* : CBuffer[10,EventMsg]  #TODO: no circular buffer - slotted event store
+    waitingEvents* : Events
     #waitingFutures* : CBuffer[10,RFuture]
     waitingOnResource* : bool
     resourceRequestResult* : ResourceHandle
@@ -116,7 +139,7 @@ type
     memSlot* : MemPoolSlot
     stackSentinelPtr* : ptr uint
     startupParameter* : ProcStartupParams
-    waitingEvents* : CBuffer[10,EventMsg]  #TODO: no circular buffer - slotted event store
+    waitingEvents* : Events
     #waitingFutures* : CBuffer[10,RFuture]
     waitingOnResource* : bool
     resourceRequestResult* : ResourceHandle
