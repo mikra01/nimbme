@@ -166,8 +166,10 @@ proc hal_uart_0_init(ibrd : uint, fbrd:uint) =
 
 template hal_uart_0_startTx*() =
    hal_uart_0_EnableTxIRQ
-   while  uartOutputBuffer.hasVal() and (not hal_uart_0_TransmitFifoFull()):
+   while uartOutputBuffer.hasVal() and (not hal_uart_0_TransmitFifoFull()):
      hal_uart_0_putc(uartOutputBuffer.fetchVal())
+   if not uartOutputBuffer.hasVal():
+      hal_uart_0_DisableTxIRQ
 
 proc uart_process_irq*(){.inline.} =
   if hal_uart_0_isUartIrqPending():

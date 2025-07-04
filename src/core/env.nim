@@ -264,11 +264,6 @@ proc runtimeDispatcherDemoWithExit*(exitChar : char, usrProc : ProcessHook)=
 
   while true:    
     # read cycle counter
-  
-
-    if uartOutputBuffer.hasVal(): # flush buffer blocking variant
-       let x = uartOutputBuffer.fetchVal()
-       hal_uart_0_putc_blocking(x)
 
     processXLockRequests()
     processMboxRequests() 

@@ -65,9 +65,7 @@ proc IRQHandler( )  {.cdecl,exportc:"irq_handler_nim",codegenDecl: "__attribute_
 
 proc triggerUart0Tx(){.cdecl,exportc:"_trigger_uart_0_tx"} =
   # if not hal_uart_0_isTxIRQEnabled:
-  hal_uart_0_EnableTxIRQ
-  hal_uart_0_putc(uartOutputBuffer.fetchVal()) # initiate transmission
-
+  hal_uart_0_startTx  
 
 proc unknownSWI(num : uint, ysp : uint,ylr : uint){.cdecl,exportc:"_other_num"}=
   hal_uart_0_strout_blocking "unknownSWI num ",16
@@ -111,7 +109,7 @@ prepcall:
     // push {r4,lr}
     bl _trigger_uart_0_tx
     // pop {r4,lr}
-    mrs r0, spsr              @ Lade SPSR (vom SWI-Mode) in r0
+    mrs r0, spsr              @ load SPSR (swi-mode) into r0
     msr cpsr_cxsf, r0
     pop {r0-r3}
     movs pc,lr

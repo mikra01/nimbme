@@ -223,13 +223,6 @@ proc doTestAll()=
 
   echo "softrtc-counter is: " & $volatileLoad( addr softRtc)
 
-
-  
-  while uartOutputBuffer.hasVal(): # flush buffer blocking variant
-    let x = uartOutputBuffer.fetchVal()
-    hal_uart_0_putc_blocking(x)
-
-
 try:
   deployExceptionHandlerHooks()
   initializeEnvironment()
