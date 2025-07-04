@@ -20,24 +20,31 @@ proc IRQHandler( )  {.cdecl,exportc:"irq_handler_nim",codegenDecl: "__attribute_
   # dmb needed because the periperal runs at different clock
   let cyStart = hal_armcc_readCycleCounter()
   (irqCycleStats.executionCountSinceStartup).inc
-  let pendingVal = hal_cpu_getDWord(cast[ptr uint](0x2000B204))    # irq pending1 
+  let pendingVal1 = hal_cpu_getDWord(cast[ptr uint](0x2000B204))    # irq pending1 
+  let pendingVal2 = hal_cpu_getDWord(cast[ptr uint](0x2000B208))    # irq pending2 
+  let pendingValb = hal_cpu_getDWord(cast[ptr uint](0x2000B200))    # pending basic
 
-  if hal_systemtimer_1_Fired(pendingVal):    
+  if hal_systemtimer_1_Fired(pendingVal1):    
     timerBuffer.putVal(cast[uint](hal_systemtimer_getTStamp32())) 
     hal_systemtimer_1_setCompareVal(boardcfg_systemtimerTimerResolution_millis)
     volatileStore(addr softRtc, volatileLoad(addr softRtc) + 1)
     hal_cpu_dmb()
     hal_systemtimer_1_clearIRQ()
 
-  let pendingVal2 = hal_cpu_getDWord(cast[ptr uint](0x2000B200))   # basic pending
 
-  if hal_armnanotimer_hasFired(pendingVal2):
+  if hal_armnanotimer_hasFired(pendingValb):
     #TODO: impl. wait nanos
     hal_armnanotimer_clearIRQ()
 
 
   #miniuart_process_irq()
   uart_process_irq()
+
+  if  (pendingVal1 and (1 shl 9).uint ) > 0:
+    serviceUsbHostIsr( addr environmentContext.registeredDevices )
+
+  irqCycleStats.cyclesLastRun = hal_armcc_getCyclesDiff(cyStart)
+  (irqCycleStats.cummulatedCyclesSinceStartup).inc(irqCycleStats.cyclesLastRun)  
 
   irqCycleStats.cyclesLastRun = hal_armcc_getCyclesDiff(cyStart)
   (irqCycleStats.cummulatedCyclesSinceStartup).inc(irqCycleStats.cyclesLastRun)  
