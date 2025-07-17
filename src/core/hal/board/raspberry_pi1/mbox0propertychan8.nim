@@ -18,7 +18,7 @@
 # mailbox property channel
 # all properitary codes are from: https://github.com/raspberrypi/firmware/wiki/Mailbox-property-interface
 # and all others from : https://bitbanged.com/posts/understanding-rpi/the-mailbox/
-# this code is more or less hardcoded and bound to the "magic" VC firmware 
+# tested with firmware rev 0x6414467A
 
 type 
     MBoxReg* =  uint32
@@ -29,7 +29,8 @@ type
     MboxPropertyResp* = tuple[pid: ProcessId, mboxNum: int, val1 : uint32, val2: uint32]
 
     PropertyTarget*  = enum MacAddr = 0, SysThrottled = 1, CoreFrequencyMeasured = 2, ArmFrequencyMeasured = 3, 
-      CoreTemp, CoreVoltage, MemoryArm, MemoryVC, FirmwareRevision, BoardModel, BoardRevision, BoardSerial, CoreFrequency
+      CoreTemp, CoreVoltage, MemoryArm, MemoryVC, FirmwareRevision, BoardModel, BoardRevision, BoardSerial, CoreFrequency,
+      GetUsbPwr, SetUsbPwr, GetUsbTiming
     RequestType = enum br8,br4  
     VCRawResponse* = tuple[res1 : uint32,res2:uint32]  
 
@@ -49,6 +50,9 @@ const
 
 var pendingMboxPropertyRequests : CBuffer[2,MboxPropertyReq]
 var queuedMboxPropertyRequests : CBuffer[8,MboxPropertyReq]
+
+# todo: consolidate request chunk names. 
+# resp/req linked together and the names are blurry
 
 type 
   EightByteRequest* {.packed.} = object
@@ -92,6 +96,22 @@ const
   TAG_GET_BOARD_SERIAL*    : MboxTag      = 0x00010004'u32
   TAG_GET_ARM_MEMORY*      : MboxTag      = 0x00010005'u32
   TAG_GET_VC_MEMORY*       : MboxTag      = 0x00010006'u32
+
+  # pwr
+  TAG_GET_POWERSTATE* : MboxTag = 0x00020001'u32 #4b req
+  TAG_GET_TIMING* : MboxTAG = 0x00020002'u32 # 4b req
+  TAG_SET_POWERSTATE* : MboxTag = 0x00028001'u32 # 8b req
+
+  PWR_DEV_ID_SDCARD* : MboxTag = 0x00000000'u32
+  PWR_DEV_ID_UART0* : MboxTag = 0x00000001'u32
+  PWR_DEV_ID_UART1* : MboxTag = 0x00000002'u32
+  PWR_DEV_ID_USB* : MboxTag = 0x00000003'u32
+  PWR_DEV_ID_I2C0* : MboxTag = 0x00000004'u32
+  PWR_DEV_ID_I2C1* : MboxTag = 0x00000005'u32
+  PWR_DEV_ID_I2C2* : MboxTag = 0x00000006'u32
+  PWR_DEV_ID_SPI* : MboxTag = 0x00000007'u32
+  PWR_DEV_ID_CCP2TX* : MboxTag = 0x00000008'u32
+
 
   # Clock / Frequency
   TAG_SET_CLOCK_RATE*      : MboxTag      = 0x00030001'u32
@@ -163,16 +183,17 @@ var hal_mbox0propertyChan8_slot1{.align(16).} : EightByteRequest
 var hal_mbox0propertyChan8_slot2{.align(16).} : EightByteRequest 
 var hal_mbox0propertyChan8_cl{.align(16).} : ClockRequest
 
-template hal_mbox0propertyChan8_initEightByteRequest(targetTag : MboxTag, subSystem : MboxTag) =
+template hal_mbox0propertyChan8_initEightByteRequest(targetTag : MboxTag, subSystem : MboxTag, state : uint32 = 0) =
   # message for clockrate
   hal_mbox0propertyChan8_8bReq.size = 32              # total size
   hal_mbox0propertyChan8_8bReq.code = REQUEST_CODE    # 
   hal_mbox0propertyChan8_8bReq.tag = targetTag
   hal_mbox0propertyChan8_8bReq.bufsize = 8           
-  hal_mbox0propertyChan8_8bReq.tagreq = REQUEST_CODE  
+  hal_mbox0propertyChan8_8bReq.tagreq = 8  
   hal_mbox0propertyChan8_8bReq.rvals[0] = subsystem      
-  hal_mbox0propertyChan8_8bReq.rvals[1] = 0   # fixed?
+  hal_mbox0propertyChan8_8bReq.rvals[1] = state   # fixed?
   hal_mbox0propertyChan8_8bReq.endtag = 0   # fixed
+
 
 template hal_mbox0propertyChan8_initFourByteRequest(targetTag : MboxTag, subSystem : MboxTag) =
   # message for clockrate
@@ -230,11 +251,10 @@ template hal_mbox0propertyChan8_getVCResponse*() : uint32 =
   hal_mbox0propertyChan8_getMBoxVal(MBOX_READ)
 
 
-
-
 proc hal_mbox0propertyChan8_isResponseOK*(propTarget : PropertyTarget) : bool =
    result = case propTarget:
-    of MacAddr,ArmFrequencyMeasured,CoreFrequencyMeasured,CoreTemp,CoreVoltage,MemoryVC,MemoryArm,BoardSerial,CoreFrequency:
+    of MacAddr,ArmFrequencyMeasured,CoreFrequencyMeasured,CoreTemp,CoreVoltage,MemoryVC,MemoryArm,BoardSerial,CoreFrequency,
+      GetUsbPwr,SetUsbPwr:
       hal_mbox0propertyChan8_8bReq.code == RESPONSE_OK
     of FirmwareRevision,BoardModel,BoardRevision:
       hal_mbox0propertyChan8_4bReq.code == RESPONSE_OK        
@@ -242,7 +262,7 @@ proc hal_mbox0propertyChan8_isResponseOK*(propTarget : PropertyTarget) : bool =
       false
 
 
-proc hal_mbox0propertyChan8_sendVCRequest*(propTarget : PropertyTarget) =
+proc hal_mbox0propertyChan8_sendVCRequest*(propTarget : PropertyTarget, val : uint32 = 0) =
   lastResponseCtrVal = (hal_mbox0propertyChan8_getMBoxVal(MBOX_STATUS) and 0xf.uint32)
   case propTarget:
     of PropertyTarget.MacAddr:
@@ -280,7 +300,13 @@ proc hal_mbox0propertyChan8_sendVCRequest*(propTarget : PropertyTarget) =
       hal_mbox0propertyChan8_sendFourByteRequest
     of PropertyTarget.BoardModel:
       hal_mbox0propertyChan8_initFourByteRequest(TAG_GET_BOARD_MODEL,UNUSED_ID)
-      hal_mbox0propertyChan8_sendFourByteRequest         
+      hal_mbox0propertyChan8_sendFourByteRequest
+    of PropertyTarget.GetUsbPwr:
+      hal_mbox0propertyChan8_initEightByteRequest(TAG_GET_POWERSTATE,PWR_DEV_ID_USB)
+      hal_mbox0propertyChan8_sendEightByteRequest     
+    of PropertyTarget.SetUsbPwr:
+      hal_mbox0propertyChan8_initEightByteRequest(TAG_SET_POWERSTATE,PWR_DEV_ID_USB, val)
+      hal_mbox0propertyChan8_sendEightByteRequest              
     else:
       discard
 
@@ -289,7 +315,7 @@ proc hal_mbox0propertyChan8_getRawValueFor*(propTarget : PropertyTarget) : VCRaw
     of FirmwareRevision,BoardRevision,BoardModel:
       discard hal_mbox0propertyChan8_getVCResponse
       (hal_mbox0propertyChan8_4bReq.rvals[0],0)
-    of MacAddr,MemoryArm,MemoryVC,BoardSerial:
+    of MacAddr,MemoryArm,MemoryVC,BoardSerial,GetUsbPwr,GetUsbTiming,SetUsbPwr:
       discard hal_mbox0propertyChan8_getVCResponse
       (hal_mbox0propertyChan8_8bReq.rvals[0],hal_mbox0propertyChan8_8bReq.rvals[1])
     of ArmFrequencyMeasured,CoreFrequencyMeasured,CoreTemp,CoreVoltage,CoreFrequency:
