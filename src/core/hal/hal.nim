@@ -46,6 +46,7 @@ export stdtypes,envtypes
 const board* {.define.}: string = "raspberry_pi1" # default
 const cpuArch* {.define.}: string = "armv6" # default
 const runtimeVersion* {.define.} : string = "0.00"
+const halMmioBase* {.define.} : uint = 0x20000000
 
 const ENV_DWORD_SIZE = cast[uint](sizeof(uint))
 
