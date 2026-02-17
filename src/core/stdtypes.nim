@@ -22,7 +22,7 @@ type
   ProcessID* = int16
   DeadlinedProcessID* = int16
   PState*  = enum Free = 0, Created = 1, Running = 2, Waiting = 3, Suspended = 4, Killed = 5, Faulted = 6
-  PType* = enum OneShot = 1, Restartable = 2, Continous = 3
+  PType* = enum OneShot = 1, Restartable = 2 # Restartable: default
   PUserPri* = enum Low = 0, Medium, High   # check if deprecated
   
   CPUFault* = enum cpuDataAbort= 0, cpuPrefetchAbort, cpuAlignmentFault, cpuUndefined
