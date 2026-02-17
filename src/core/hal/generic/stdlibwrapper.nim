@@ -74,7 +74,7 @@ proc newlibExit(status : cint) {.exportc:"_exit",codegenDecl: "$# __attribute__(
                                                                       	         
 """.}  
 
-const CLOCK_THREAD_CPUTIME_ID = 3  
+# const CLOCK_THREAD_CPUTIME_ID = 3  
 
 # _sbrk_r, _fstat_r, _isatty_r, _close_r, _lseek_r, _write_r, _read_r
 
