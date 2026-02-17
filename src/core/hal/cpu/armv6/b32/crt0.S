@@ -52,7 +52,7 @@ fiq_handler_addr: .word fiq_handler_nim
 vectors_end:
 
 _launchproc_entry: 
-push {r4-r12,lr}                     // syscontext
+push {r4-r11,lr}                     // syscontext
 str sp,[r0]
 movs sp,r1
 mov r0,#0
@@ -60,12 +60,12 @@ mcr p15, 0, r0, c7, c10, #5          // dmb
 pop {r0,r1,pc}
 
 _switch_context:                     
-push {r4-r12,lr}  
+push {r4-r11,lr}  
 str sp,[r0]          
 movs sp,r1 
 mov r0,#0
 mcr p15, 0, r0, c7, c10, #5         // dmb  
-pop {r4-r12,pc}	
+pop {r4-r11,pc}	
 
 
 _ret_call:
