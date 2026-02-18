@@ -379,8 +379,8 @@ proc sleep(seconds : cuint) : cint {.exportc,codegenDecl: "$# __attribute__((use
 
 proc nanosleep(rqtp : ptr Timespec, rmtp : ptr Timespec) : cint {.exportc,codegenDecl: "$# __attribute__((used)) $#$#",cdecl.}  = 
   if not isSys(getActivePID()): # sys never sleeps
-    # interrupt while sleep not possible so rmtp is left open
-    waitAndResume(cast[uint](rqtp.tv_nsec div 1000000)) 
+    # interrupt while sleep not possible so rmtp is left open    
+    waitAndResume(cast[uint](rqtp.tv_nsec div 1000000 + rqtp.tv_sec * 1000 )) 
   return 0
 
 proc clock_nanosleep(clockId: ClockIdT, flags : int, rqtp : ptr Timespec, rmtp : ptr Timespec) : cint {.exportc,codegenDecl: "$# __attribute__((used)) $#$#",cdecl.} = 
