@@ -97,7 +97,7 @@ proc hal_cpu_irqDisabledCall*(callee : proc() {.cdecl,inline.}){.inline.} =
     : "r0" 
     """    
 
-proc hal_cpu_enableAligmentFault*()=
+proc hal_cpu_enableAligmentFault*() {.inline.} =
   asm """ 
     mrc p15, 0, r0, c1, c0, 0   
     orr r0, r0, #(1 << 1)       
@@ -172,14 +172,14 @@ proc hal_cpu_saveCPSR*(rd : ptr ArmCpuState){.inline.} =
     """
 
 # see blurry chapt 1.3 of the bcm2835 datasheet 
-template hal_cpu_dmb()= # data memory barrier make sure following accesses are ordered
+proc hal_cpu_dmb() {.inline.} = # data memory barrier make sure following accesses are ordered
   {.emit""" 
 
   __asm volatile("mcr p15, 0, r0, c7, c10, #5\n" : : : "r0");
   """.}
 
 
-template hal_cpu_atomicAdd*(memptr: ptr uint32, val: uint32) =
+proc hal_cpu_atomicAdd*(memptr: ptr uint32, val: uint32) {.inline.} =
   # to use this: mmu must be activated with Inner/Outer Write-back Shareable
   # emit only if mmu enabled. else do nothing
   {.emit:"""
@@ -196,7 +196,7 @@ template hal_cpu_atomicAdd*(memptr: ptr uint32, val: uint32) =
     );
   """.}
 
-template hal_cpu_disable_MMU*() =
+proc hal_cpu_disable_MMU*() {.inline.} =
   asm """
     mrc p15, 0, r0, c1, c0, 0   // read SCTLR 
     bic r0, r0, #(1 << 0)       // clear mmu enable bit 0
@@ -208,7 +208,7 @@ template hal_cpu_disable_MMU*() =
   """
 
 
-proc hal_cpu_drain_WriteBuffer*() =
+proc hal_cpu_drain_WriteBuffer*() {.inline.}  =
  asm """
     mov r0, #0
     mcr p15, 0, r0, c7, c10, 4  
@@ -216,7 +216,7 @@ proc hal_cpu_drain_WriteBuffer*() =
     :
     : "r0"
   """
-proc hal_cpu_tbld_invalidate*()=
+proc hal_cpu_tbld_invalidate*() {.inline.} =
   asm """
     mov r0, #0
     mcr p15, 0, r0, c8, c7, 0   
@@ -225,7 +225,7 @@ proc hal_cpu_tbld_invalidate*()=
     :
     : "r0"
   """
-proc hal_cpu_invalidate_InstrCACHE*()=
+proc hal_cpu_invalidate_InstrCACHE*() {.inline.} =
   asm """
     mov r0, #0
     mcr p15, 0, r0, c7, c5, 0  
@@ -233,7 +233,7 @@ proc hal_cpu_invalidate_InstrCACHE*()=
     :
     : "r0"
   """
-proc hal_cpu_invalidate_DataCACHE*()=
+proc hal_cpu_invalidate_DataCACHE*() {.inline.} =
   asm """
     mov r0, #0
     mcr p15, 0, r0, c7, c6, 0   
@@ -242,7 +242,7 @@ proc hal_cpu_invalidate_DataCACHE*()=
     : "r0"
   """
 
-proc hal_cpu_cleanAndInvalidateDCache*() =
+proc hal_cpu_cleanAndInvalidateDCache*() {.inline.}  =
   asm """
     MOV r0, #0
     MCR p15, 0, r0, c7, c10, 0   
@@ -251,7 +251,7 @@ proc hal_cpu_cleanAndInvalidateDCache*() =
     :
     : "r0"
   """  
-proc hal_cpu_disableDCache*() =
+proc hal_cpu_disableDCache*() {.inline.}  =
   asm """
     MRC p15, 0, r0, c1, c0, 0    // Read System Control Register
     BIC r0, r0, #(1 << 2)        // Clear bit 2: disable data cache
