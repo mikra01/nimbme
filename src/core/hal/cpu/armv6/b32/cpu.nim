@@ -30,7 +30,7 @@ type
 # B rev2 512mb 000d/000e/000f
 # uart is pin8&10(gpio14/15) regardles of model/rev
 
-template hal_cpu_doSoftwareIRQ*(trapNum : static cint) = 
+template hal_cpu_doSoftwareIRQ*(trapNum : static cint) {.redefine.} = 
   {.emit: """ 				
       #define doSoftwareIRQ(trapNum) asm  ( "svc %0"  : : "I" (trapNum) );
        // 0 to 224–1 (a 24-bit value) in an ARM instruction.
